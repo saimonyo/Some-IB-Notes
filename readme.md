@@ -18,3 +18,5 @@ My new notes use:
   headsep=24pt,
 }
 ```
+
+Although, these notes can be used by anyone I would also advise you to make your own notes. People often say that spending the time to write notes is wasted (especially in LaTeX how I did it), I disagree going through the slides slowly and writing the notes out in detail helped the content stick for me and I could recall writing it when a question was asked. Obviously, this does take a lot of time but find what works for you.
