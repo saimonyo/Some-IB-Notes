@@ -1,0 +1,1357 @@
+\documentclass{article}
+
+
+\input{../preamble.tex}
+\usepackage{adjustbox}
+
+
+
+\title{Semantics of Programming Languages}
+\author{Simon}
+\begin{document}
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{First Imperative Language (L1)}
+
+\subsection{L1 - Syntax}
+
+L1 has the following syntax:
+\begin{alignat*}{2}
+    &\text{Booleans } \qquad &&b \in \mathbb{B}\ =\ \{\text{\textbf{true}}, \text{\textbf{false}}\}\\
+    &\text{Integers } &&n \in \mathbb{Z}\\
+    &\text{Locations} &&\ell \in \mathbb{L}\ =\ \{l, l_0, l_1, l_2, \dots\}\\[10px]
+    &\text{Operations} &&op ::= + \,|\, \ge\\
+    &\text{Expressions}
+\end{alignat*}
+\begin{alignat*}{1}
+    e ::= &n \ |\  b \ |\  e_{1} \ op \ e_{2} \ |\  \text{\textbf{if}}\ e_{1} \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3} \ |\ \\
+    &\ell \coloneq e \ |\  !l \ |\ \\
+    &\text{\textbf{skip}} \ |\  e_{1};e_{2} \ |\ \\
+    &\text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ e_{2}
+\end{alignat*}
+
+\subsection{Operational Semantics}
+
+In order to describe the behaviour of L1 programs we will use structural operational semantics to define various forms of automata.
+
+\vspace{5px}
+
+A transition system consists of 
+\begin{itemize}
+    \item A set \textbf{Config} 
+    \item A binary relation \( \longrightarrow \ \subseteq \text{\textbf{Config}} \times \text{\textbf{Config}}\)
+\end{itemize}
+
+\textbf{Notation}:
+
+\begin{itemize}
+    \item \( \longrightarrow^*\) is the reflexive transitive closure of \( \longrightarrow \), so \(c \longrightarrow c'\) iff there exists \(k \geq 0\) and
+    \(c_0, \dots, c_k\) such that \(c = c_0 \longrightarrow c_{1} \longrightarrow \dots \longrightarrow  c_k = c'\) 
+    \item \(\not \longrightarrow \) is a unary predicate (a subset of \textbf{Config}) defined by \(c \not \longrightarrow \) iff \(\neg \exists\ c'. c \longrightarrow c\)
+\end{itemize}
+
+We say there are finite stores \(s \in \mathbb{L} \rightharpoonup \mathbb{Z}\). And then define configurations to be pairs \(\langle e, s \rangle\) of an expression \(e\),
+and a store \(s\), which means our transition relation will have the form:
+
+\[
+    \langle e, s \rangle \longrightarrow \langle e', s' \rangle 
+\]
+
+We can continue transitioning until we reach a value:
+
+\[
+    \mathbb{V} = \mathbb{B}\ \cup\ \mathbb{Z}\ \cup\ \{\text{\textbf{skip}}\}
+\]
+\[
+    v ::= b \ | \ n \ | \ \text{\textbf{skip}} \quad \ \ \ \ \ 
+\]
+
+\vspace{5px}
+
+\textbf{Stuck}
+
+Call a configuration \(c = \langle e, s \rangle \) stuck if \(\ \ e \not \in \mathbb{V}\ \land\ \langle e, s \rangle \not \longrightarrow \)
+
+\newpage
+
+\subsection{L1 Full Operational Semantics}\label{L1-collected-semantics}
+
+\[
+\begin{aligned}
+& (\mathrm{op}\ +) \quad\left\langle n_1+n_2, s\right\rangle \longrightarrow\langle n, s\rangle \quad \qquad \text { if } n=n_1+n_2 \\[5px]
+\ \ \ \ & (\mathrm{op} \geq) \quad\left\langle n_1 \geq n_2, s\right\rangle \longrightarrow\langle b, s\rangle \qquad \ \  \ \, \text { if } b=\left(n_1 \geq n_2\right) \\[5px]
+& (\mathrm{op} 1)\ \ \ \frac{\left\langle e_1, s\right\rangle \longrightarrow\left\langle e_1^{\prime}, s^{\prime}\right\rangle}{\left\langle e_1 \text { op } e_2, s\right\rangle \longrightarrow\left\langle e_1^{\prime} \text { op } e_2, s^{\prime}\right\rangle} \\[10px]
+& (\mathrm{op2})\ \ \ \frac{\left\langle e_2, s\right\rangle \longrightarrow\left\langle e_2^{\prime}, s^{\prime}\right\rangle}{\left\langle v \text { op } e_2, s\right\rangle \longrightarrow\left\langle v \quad o p \quad e_2^{\prime}, s^{\prime}\right\rangle}
+\end{aligned}
+\]
+
+
+\begin{alignat*}{3}
+&\text { (deref) }\qquad &&\langle!\ell, s\rangle \longrightarrow\langle n, s\rangle \quad &&\text { if } \ell \in \operatorname{dom}(s) \text { and } s(\ell)=n\\[5px]
+&\text { (assign1) }&&\langle\ell:=n, s\rangle \longrightarrow\langle\text { \textbf{skip}, } s+\{\ell \mapsto n\}\rangle \quad &&\text { if } \ell \in \operatorname{dom}(s)\\[10px]
+&\text { (assign2) } &&\frac{\langle e, s\rangle \longrightarrow\left\langle e^{\prime}, s^{\prime}\right\rangle}{\langle\ell:=e, s\rangle \longrightarrow\left\langle\ell:=e^{\prime}, s^{\prime}\right\rangle}
+\end{alignat*}
+
+
+\[
+\text { (seq1) }\left\langle\text { skip } ; e_2, s\right\rangle \longrightarrow\left\langle e_2, s\right\rangle \phantom{aaaaaaaaaaaaaaaaa}
+\]
+
+\[
+\text { (seq2) } \frac{\left\langle e_1, s\right\rangle \longrightarrow\left\langle e_1^{\prime}, s^{\prime}\right\rangle}{\left\langle e_1 ; e_2, s\right\rangle \longrightarrow\left\langle e_1^{\prime} ; e_2, s^{\prime}\right\rangle} \phantom{aaaaaaaaaaaaaaaaa}
+\]
+
+\begin{alignat*}{2}
+    &( \text{if}1 ) \quad \langle \text{\textbf{if}}\ \text{\textbf{true}}\  &&\text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3},\ s \rangle \longrightarrow \langle e_{2},\ s \rangle\\[5px]
+    &( \text{if}1 ) \quad \langle \text{\textbf{if}}\ \text{\textbf{false}}\ &&\text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3},\ s \rangle \longrightarrow \langle e_{2},\ s \rangle
+\end{alignat*}
+
+\[
+\text { (if3) }\quad \frac{\left\langle e_1, s\right\rangle \longrightarrow\left\langle e_1^{\prime}, s^{\prime}\right\rangle}{\left\langle\text { if } e_1 \text { then } e_2 \text { else } e_3, s\right\rangle \longrightarrow\left\langle\text { if } e_1^{\prime} \text { then } e_2 \text { else } e_3, s^{\prime}\right\rangle} \\
+\]
+
+\[
+\text{(while)}\quad\left\langle \text{\textbf{while}}\ e_1\ \text{\textbf{do}}\ e_2, s\right\rangle \longrightarrow\left\langle \text{\textbf{if}}\ e_1\ \text{\textbf{then}}\left(e_2 ;\ \text{\textbf{while}}\ e_1\ \text{\textbf{do}}\ e_2\right)\ \text{\textbf{else}}\ \text{\textbf{skip}}, s\right\rangle
+\]
+
+\newpage
+
+\subsection{L1 Determinancy}
+
+\begin{theo}[Determinancy]{}
+    If \(\langle e,s \rangle \longrightarrow \langle e_{1}, s_{1} \rangle\) and \(\langle e,s \rangle \longrightarrow \langle e_{2}, s_{2} \rangle\) then
+    \(\langle e_1, s_1 \rangle = \langle e_2, s_2 \rangle \)
+\end{theo}
+
+\begin{lem}[Irreducibility of Values]{\thelem}
+    For all \(e \in L_1\), if \(e\) is a value then
+    \[
+        \forall s. \neg \exists e', s' \ . \ \langle e,s \rangle \longrightarrow \langle e', s; \rangle
+    \]
+
+    \textbf{Proof}:
+
+    \vspace{5px}
+
+    By definition of the set of values \(e\) must be in the form of one of the following \(n, b, \text{\textbf{skip}}\), by considering
+    the rules of the language there is no rule with the conclusion of the form \(\langle e,s \rangle \longrightarrow  \langle e',s' \rangle\) for any
+    \(e\) of the form previously described.
+\end{lem}
+
+
+\subsubsection{Inversion}
+
+For inductive proofs we often need an inversion property, that given a tuple in one inductively defined relation, gives you a case
+analysis of the possible last rule used.
+
+\begin{lem}[Inversion for \( \longrightarrow \)]{\thelem}
+    (take any occurences of (\(n_i, n\)) to be integers (\(\mathbb{Z}\)), (\(\ell, l_i\)) to be labels (\(\mathbb{L}\)) and (\(b, b_i\)) to be booleans \((\mathbb{B})\))
+
+    \vspace{5px}
+
+    If \(\langle e,s \rangle \longrightarrow \langle \hat{e}, \hat{s} \rangle\) then either:
+    \vspace{10px}
+
+    \vspace{10px}
+
+    \begin{tabular}{c l l}
+        (op \(+\)) & \(\exists n_1, n_2, n\) &s.t. \(e = n_1 + n_2\ \) and \(\ \hat{e} = n\) and \(\ n = n_{1} +\,\! n_{2}\ \) and \(\ \hat{s} = s\)\\[5px]
+        (op \( \geq\)) & \(\exists n_1, n_2, b\) &s.t. \(e = n_1 \geq n_2\) and \(\hat{e} = b\) and \(\hat{s} = s\) and \(\,b = n_{1} \geq n_{2}\)\\[5px]
+        (op1) & \(\exists e_{1}, e_{2}, op, e_1'\) &s.t. \(e = e_{1}\ op\ e_{2}\) and \(e = e_{1}'\ op\ e_{2}\) and \(\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle  \)\\[5px]
+        (op2) & \(\exists n, e_{2}, op, e_2'\) &s.t. \(e = n\ \,\, op\ e_{2}\) and \(e = n\ \, \, op\ e_{2}'\) and \(\langle e_{2}, s \rangle \longrightarrow \langle e_{2}', s' \rangle  \)\\[5px]
+        (deref) & \(\exists \ell, n\) &s.t. \(e =\ !\ell\), \(\hat{e} = n\) and \(\hat{s} = s\) and \(\ell \in \text{dom}(s)\) and \(s(\ell ) =n\)\\[5px]
+        (assign1) & \(\exists \ell, n\) &s.t. \(e = (\ell \coloneq n)\) and \(\hat{e} = \text{\textbf{skip}}\) and \(\hat{s} = s + \{\ell \mapsto n\}\)\\[5px]
+        (assign2) & \(\exists \ell, e_1, e_1'\) &s.t. \(e = (\ell \coloneq e_1)\) and \(\hat{e} = (\ell \coloneq e_1')\) and \(\ell \in \text{dom}(s)\) and \(\langle e_{1}, s \rangle \longrightarrow \langle e_1', s' \rangle \)\\[5px]
+        (if1) & \(\exists e_{2}, e_{3}\) &s.t. \(e = \text{\textbf{if}}\ \text{\textbf{true}}\,\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3}\)
+        and \(\hat{e} = e_{2}\) and \(\hat{s} = s\)\\[5px]
+        (if2) & \(\exists e_{2}, e_{3}\) &s.t. \(e = \text{\textbf{if}}\ \text{\textbf{false}}\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3}\)
+        and \(\hat{e} = e_{3}\) and \(\hat{s} = s\)\\[5px]
+        (if3) & \(\exists e_{1}, e_{2}, e_{3}, e_1'\) &s.t. \(e = \text{\textbf{if}}\ e_{1}\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3}\)
+        and \(\hat{e} = \text{\textbf{if}}\ e_{1}'\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3}\)\\
+        & & \(\quad \ \ \)and \(\langle e_{1}, s \rangle \longrightarrow \langle e_{2}, \hat{s} \rangle\)\\[5px]
+        (while) & \(\exists e_{1}, e_{2}\) &s.t. \(e = \text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ e_{2}\) and \(\hat{e} = \text{\textbf{if}}\ e_{1}\ \text{\textbf{then}}\ (e_{2};\text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ e_{2})\ \text{\textbf{else}}\ \text{\textbf{skip}}\)\\
+        & & \(\quad \ \ \)and \(\hat{s} = s \)
+    \end{tabular}
+
+    \vspace{20px}
+
+    \textbf{Proof}:
+
+    Let \[
+        \Phi(e,s,\hat{e},\hat{s}) = \langle e,s \rangle \longrightarrow \langle \hat{e}, \hat{s} \rangle \implies ( \text{op} +)\ \lor\ ( \text{op} \geq)\ \lor\ \dots\ \lor\ ( \text{if}3)\ \lor\ ( \text{while}) 
+    \]
+
+    Assume the LHS of the implication that is there is a transition from \(\langle e,s \rangle\) to \(\langle \hat{e}, \hat{s} \rangle\) then we
+    are required to prove that the transition is one of the transitions defined by the operational semantics of the L1 language.
+
+    \vspace{5px}
+
+    Since we are assuming there is a transition we only need to consider rules that provide a transition and that \(\langle e,s \rangle\) is of the form of
+    the LHS of a transition rule.
+
+    \newpage
+
+    \textbf{Case 1}: \(\quad (e\) is of the form \(n_{1} + n_{2}\))
+
+    \begin{adjustwidth}{20px}{0px}
+        Take \(s\) to be arbitrary then since \(n_1, n_2 \in \mathbb{Z}\) there is a unique \(n\) s.t. \(n_1 + n_2 = n\) so we we can use the (op \(+\)) rule
+        to get \(\langle n_{1}+n_{2},s \rangle \longrightarrow \langle n, s \rangle \)
+    \end{adjustwidth}
+
+    \vspace{5px}
+
+    \textbf{Case 2}: \(\quad (e\) is of the form \(n_{1} \geq n_{2}\))
+
+    \begin{adjustwidth}{20px}{0px}
+        Take \(s\) to be arbitrary then since \(n_1, n_2 \in \mathbb{Z}\) there is a \(b\) s.t. \(n_1 \geq n_2 = b\) so we we can use the (op \(\geq\)) rule
+        to get \(\langle n_{1} \geq n_{2},s \rangle \longrightarrow \langle b, s \rangle \)
+    \end{adjustwidth}
+
+    \vspace{5px}
+
+    \textbf{Case 3}: \(\quad (e\) is of the form \(n_{1} \geq n_{2}\))
+
+    \begin{adjustwidth}{20px}{0px}
+        Take \(s\) to be arbitrary then since \(n_1, n_2 \in \mathbb{Z}\) there is a \(b\) s.t. \(n_1 \geq n_2 = b\) so we we can use the (op \(\geq\)) rule
+        to get \(\langle n_{1} \geq n_{2},s \rangle \longrightarrow \langle b, s \rangle \)
+    \end{adjustwidth}
+\end{lem}
+
+\newpage
+
+\textbf{Proof} of Determinancy
+
+\vspace{10px}
+
+
+Take \[
+    \Phi(e) \triangleq \forall  s, e', e'', s', s''.\ \big(\langle e,s \rangle \longrightarrow \langle e', s' \rangle \land \langle e,s \rangle \longrightarrow \langle e'', s'' \rangle  \big) \implies \langle e',s' \rangle = \langle e'', s'' \rangle 
+\]
+
+We are RTP that \(\forall e \in L_1.\ \Phi(e)\).
+
+\vspace{10px}
+
+\textbf{Case} \(e \in \{\text{\textbf{skip}}, b, n\}\)
+
+\vspace{5px}
+
+\begin{adjustwidth}{20px}{0px}
+    If \(e\) is a value there are no transition rules that have a conclusion of the from \(\langle v, s \rangle \longrightarrow \langle ..,\ .. \rangle\)
+    which means the LHS is false for this form meaning \(\Phi(e)\) when \(e\) is a value holds vacuously. 
+\end{adjustwidth}
+
+\vspace{10px}
+
+For the remaining cases of the form of \(e\) we will use structural induction, and proceed by assuming the LHS of the implication and use
+further case analysis to look at the type of the transition.
+
+\vspace{10px}
+
+\textbf{Case} \(e =\ !\ell \)
+
+\vspace{5px}
+
+\begin{adjustwidth}{20px}{0px}
+    Take arbitrary \(s, e', e'', s', s''\) s.t. \(\langle !\ell ,s \rangle \longrightarrow \langle e', s' \rangle \land \langle !\ell ,s \rangle \longrightarrow \langle e'', s'' \rangle\),
+    the only transition rule that has a conclusion with the lhs expression being of the form \(!\ell \) is (deref), so both transitions instances
+    of this rule which then means.
+    \vspace{-10px}
+    \begin{alignat*}{2}
+        &\ell \in \text{dom}(s) \qquad &&\ell \in \text{dom}(s)\\
+        &e' = s(\ell) &&e'' = s(\ell)\\
+        &s' = s && s'' = s
+    \end{alignat*}
+    So from this we have \(s' = s = s''\), and since \(s\) is a store which is a partial function mapping from the set of labels to the set of integers
+    then if \(\ell \in \text{dom}(s)\) then \(e' = s(\ell) = e''\), which means \(\langle e',s' \rangle = \langle e'', s'' \rangle\), so \(\Phi\) holds
+    in this case of the form of \(e\).
+\end{adjustwidth}
+
+\vspace{10px}
+
+\textbf{Case} \(e =\ (\ell \coloneq e_{1})\quad\quad\) suppose that \(\Phi(e_{1})\) then we are RTP \(\Phi(\ell \coloneq e_{1})\)
+
+\vspace{5px}
+
+\begin{adjustwidth}{20px}{0px}
+    Take arbitrary \(s, e', e'', s', s''\) s.t. \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e', s' \rangle \land \langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e'', s'' \rangle\),
+    then there are two forms for the transition they are the rules (assign1) and (assign2) wlog there are 3 cases we have for the possible permutations
+    of the pairings:
+
+    \vspace{10px}
+
+    \textbf{Case} \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e', s' \rangle\) is (assign1) and \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e'', s'' \rangle\) is (assign1)
+
+    \vspace{5px}
+
+    \begin{adjustwidth}{20px}{0px}
+        Then for both to be instances of (assign1) then \(e_{1}\) must be a value, and more specifically an integer value \(n\). That is
+        \(e = (\ell \coloneq n)\), then looking at (assign1):
+        \begin{alignat*}{2}
+            &\ell \in \text{dom}(s) &&\ell \in \text{dom}(s)\\
+            &e' = \text{\textbf{skip}} &&e'' = \text{\textbf{skip}}\\
+            &s' = s + \{\ell \mapsto n\}\qquad &&s'' = s + \{\ell \mapsto n\}
+        \end{alignat*}
+        \[
+            \implies \langle e',s' \rangle = \langle e'', s'' \rangle \qquad \
+        \]
+    \end{adjustwidth}
+
+    \vspace{10px}
+
+    \textbf{Case} \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e', s' \rangle\) is (assign2) and \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e'', s'' \rangle\) is (assign2)
+
+    \vspace{5px}
+
+    \begin{adjustwidth}{20px}{0px}
+        Then \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle \ell \coloneq e_1', s' \rangle\) with \(\langle e_{1}, s \rangle \longrightarrow \langle e_{1}, s' \rangle \)
+        and \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle \ell \coloneq e_1'', s' \rangle\) with \(\langle e_{1}, s \rangle \longrightarrow \langle e_{1}'', s'' \rangle \).
+        By the inductive hypothesis, \(\Phi(e_{1})\) so we have that \(\langle e_{1}', s' \rangle = \langle e_{1}'', s'' \rangle\), which means that
+        \begin{alignat*}{1}
+            &\implies \langle \ell \coloneq e_1', s' \rangle = \langle \ell \coloneq e_1'', s' \rangle\\
+            &\implies \langle e',s' \rangle = \langle e'', s'' \rangle \qquad
+        \end{alignat*}
+    \end{adjustwidth}
+
+    \vspace{10px}
+
+    \textbf{Case} \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e', s' \rangle\) is (assign2) and \(\langle \ell \coloneq e_{1} ,s \rangle \longrightarrow \langle e'', s'' \rangle\) is (assign1)
+
+    \vspace{5px}
+
+    \begin{adjustwidth}{20px}{0px}
+        Then from the first transition which is an instance of (assign2) we get \(\exists e_1', s'. \ \ \langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle\), however
+        we get from the second transition which is an instance of (assign1) that \(e_1\) is value and from the Irreducibility of Values lemma we have
+        \(\not\exists e_1', s'. \ \ \langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle\), which is a contradiction so the assumption is false
+        which means the rhs holds vacuously.
+    \end{adjustwidth}
+
+\end{adjustwidth}
+
+\newpage
+
+
+\textbf{Case} \(e = (e_{1}\ op\ e_{2})\quad\quad\) suppose that \(\Phi(e_1) \land \Phi(e_2)\) then we are RTP \(\Phi(e_{1}\ op\ e_{2})\)
+
+\begin{adjustwidth}{20px}{0px}
+    Take arbitrary \(s, e', e'', s', s''\) s.t. \(\langle e_{1}\ op\ e_{2} ,s \rangle \longrightarrow \langle e', s' \rangle \land \langle e_{1}\ op\ e_{2} ,s \rangle \longrightarrow \langle e'', s'' \rangle\),
+
+\end{adjustwidth}
+
+
+\newpage
+
+\subsection{L1 Type System}
+
+Define a ternary relation \(\vdash\), that with infix notation reads \(\Gamma \vdash e: T\) as \(e\) has type \(T\), under the assumptions \(\Gamma\)
+on the types of locations that may occur in \(e\).
+
+\vspace{10px}
+
+We write \(T\) and \(T_{loc}\) for the sets of all terms of these grammars.
+
+\vspace{5px}
+
+And let \(\Gamma\) range over \(\text{\textbf{TypeEnv}}\), the finite partial functions from locations \(\mathbb{L}\) to \(T_{loc}\). 
+
+(Notation: write \(\Gamma\) as \(\ \ l_1: \text{intref}, \dots, l_k: \text{intref}\ \ \) instead of \(\ \ \{l_1 \mapsto \text{intref}, \dots, l_k \mapsto \text{intref}\}\ \ \)) 
+
+\subsection{L1 Collected Typing System}\label{L1-collected-types}
+
+Types of expressions:
+\[
+    T \quad ::= \quad \text{int} \ | \ \text{bool} \ | \ \text{unit}
+\]
+
+Types of locations:
+\[
+    T_{loc}\quad ::=\quad \text{intref}
+\]
+
+\begin{alignat*}{3}
+    &\ ( \text{int} )\quad &&\Gamma \vdash n: \text{int}\qquad &&\text{for } n \in \mathbb{Z}\\
+    &( \text{bool} )\quad &&\Gamma \vdash b\,: \text{bool} &&\text{for } b \,\in \mathbb{B}
+\end{alignat*}
+
+\[
+    \qquad\qquad
+    \begin{prooftree}
+        \hypo{\Gamma \vdash e_{1}: \text{int}}
+        \hypo{\Gamma \vdash e_{2}: \text{int}}
+        \infer[left label=(op+)]2{\Gamma \vdash e_{1} + e_{2}: \text{int}}
+    \end{prooftree}\qquad\qquad
+    \begin{prooftree}
+        \hypo{\Gamma \vdash e_{1}: \text{int}}
+        \hypo{\Gamma \vdash e_{2}: \text{int}}
+        \infer[left label=(op\( \geq\))]2{\Gamma \vdash e_{1} \geq e_{2}: \text{bool}}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\Gamma \vdash e_1: \text{bool}}
+        \hypo{\Gamma \vdash e_{2}: T}
+        \hypo{\Gamma \vdash e_{3}: T}
+        \infer[left label=(if)]3{\Gamma \vdash \text{\textbf{if}}\ e_{1}\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3}: T}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\Gamma(\ell) = \text{intref}}
+        \hypo{\Gamma \vdash e: \text{int}}
+        \infer[left label=(assign)]2{\Gamma \vdash \ell \coloneq e: \text{unit}}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\Gamma(\ell) = \text{intref}}
+        \infer[left label=(deref)]1{\Gamma \vdash !\ell: \text{int}}
+    \end{prooftree}
+\]
+
+\[
+    ( \text{skip} )\quad \Gamma \vdash \text{\textbf{skip}}: \text{unit}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\Gamma \vdash e_{1}: \text{unit}}
+        \hypo{\Gamma \vdash e_{2}: T}
+        \infer[left label=(seq)]2{\Gamma \vdash e_{1};e_{2}: T}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\Gamma \vdash e_{1}: \text{bool}}
+        \hypo{\Gamma \vdash e_{2}: \text{unit}}
+        \infer[left label=(while)]2{\Gamma \vdash \text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ e_{2}: \text{unit}}
+    \end{prooftree}
+\]
+
+\newpage
+
+\section{Functions - L2}
+
+\subsection{Concrete Syntax}
+
+By convention, application associates to the left, so \(\ \ e_{1}\ e_{2}\ e_{3}\ \ \) denotes \(\ \ (e_{1}\ e_{2})\ e_{3}\ \ \) whereas type
+arrows associate to the right so \(\ \ T_{1} \to T_{2} \to T_{3}\ \ \) denotes \(\ \ T_{1} \to (T_{2} \to T_{3})\ \ \).
+
+\vspace{5px}
+
+A \(\text{\textbf{fn}}\) extends to the right as far as parantheses permit, so \(\ \ \text{\textbf{fn}}\ x: \text{unit} \Rightarrow x;x\ \ \) denotes
+\(\ \ \text{\textbf{fn}}\ x: \text{unit} \Rightarrow (x;x)\ \ \) 
+
+\begin{itemize}
+    \item Variables are not locations \((\mathbb{L} \cap \mathbb{X} = \{\})\) 
+    \item Cannot abstract on locations. For example, (\(\text{\textbf{fn}}\ \ell: \text{intref} \Rightarrow !\ell \)) is not in the syntax
+\end{itemize}
+
+
+\subsection{Alpha Conversion}
+
+In expressions \( \text{\textbf{fn}}\ x: T \Rightarrow e\) the \(x\) is a binder
+
+\begin{itemize}
+    \item Inside \(e\), any \(x\)'s (that themselves are not binder and are not inside another \(\text{\textbf{fn}}\ x: T' \dots\)) mean the
+    same thing - the formal paramater of this function. 
+    \item Outside this \( \text{\textbf{fn}}\ x: T \Rightarrow e\) it does not matter which variable we used for the formal paramater   
+\end{itemize}
+
+We will allow ourselves to at any time at all, in any expression replace the binding \(x\) and all occurences of \(x\) that are bound by that 
+binder, by any other variable - so long as that does not change the binding graph.
+
+\[
+    \text{\textbf{fn}}\ z : \text{int} \to \text{int} \to \text{int} \Rightarrow (\text{\textbf{fn}}\ y: \text{int} \Rightarrow z\ y\ y)
+\]
+
+% https://q.uiver.app/#q=WzAsNyxbMiwxLCJcXHRleHR7XFx0ZXh0YmZ7Zm4gfX0gXFxidWxsZXQ6IFxcdGV4dHtpbnR9IFxcUmlnaHRhcnJvdyJdLFsyLDIsIkAiXSxbMSwzLCJAIl0sWzAsNCwiXFxidWxsZXQiXSxbMiw0LCJcXGJ1bGxldCJdLFszLDMsIlxcYnVsbGV0Il0sWzIsMCwiXFx0ZXh0e1xcdGV4dGJme2ZuIH19IFxcYnVsbGV0OiBcXHRleHR7aW50fSBcXHRvIFxcdGV4dHtpbnR9IFxcdG8gXFx0ZXh0e2ludCB9IFxcUmlnaHRhcnJvdyJdLFswLDEsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSwyLCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJub25lIn19fV0sWzIsMywiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoibm9uZSJ9fX1dLFsyLDQsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSw1LCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJub25lIn19fV0sWzUsMCwiIiwwLHsiY3VydmUiOjQsImNvbG91ciI6WzAsNjAsNjBdfV0sWzQsMCwiIiwwLHsiY3VydmUiOjQsImNvbG91ciI6WzAsNjAsNjBdfV0sWzMsNiwiIiwwLHsiY3VydmUiOi00LCJjb2xvdXIiOlswLDYwLDYwXX1dLFs2LDAsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XV0=
+\[\begin{tikzcd}
+	&& {\text{\textbf{fn }} \cdot: \text{int} \to \text{int} \to \text{int } \Rightarrow} \\
+	&& {\text{\textbf{fn }} \cdot: \text{int} \Rightarrow} \\
+	&& {@} \\
+	& {@} && \bullet \\
+	\bullet && \bullet
+	\arrow[no head, from=1-3, to=2-3]
+	\arrow[no head, from=2-3, to=3-3]
+	\arrow[no head, from=3-3, to=4-2]
+	\arrow[no head, from=3-3, to=4-4]
+	\arrow[no head, from=4-2, to=5-1]
+	\arrow[no head, from=4-2, to=5-3]
+	\arrow[color={rgb,255:red,214;green,92;blue,92}, curve={height=24pt}, from=4-4, to=2-3]
+	\arrow[color={rgb,255:red,214;green,92;blue,92}, curve={height=-24pt}, from=5-1, to=1-3]
+	\arrow[color={rgb,255:red,214;green,92;blue,92}, curve={height=24pt}, from=5-3, to=2-3]
+\end{tikzcd}\]
+
+\subsubsection{De Brujin Indices}
+
+Our implementation will use those pointers - known as De Brujin indices. Each occurence of a bound variable is represented by the number of \(\text{\textbf{fn }} \cdot: T \Rightarrow\) nodes you
+have to count out to get to its binder.
+
+\vspace{10px}
+
+\begin{center}
+\begin{minipage}{0.435\textwidth}
+    \[
+        \text{\textbf{fn }} \cdot: \text{int} \Rightarrow (\text{\textbf{fn}}\ \cdot: \text{int} \Rightarrow v_0 + 2)
+    \]
+
+    \vspace{10px}
+
+    % https://q.uiver.app/#q=WzAsNSxbMSwwLCJcXHRleHR7XFx0ZXh0YmZ7Zm4gfX0gXFxidWxsZXQ6IFxcdGV4dHtpbnR9IFxcUmlnaHRhcnJvdyJdLFsxLDEsIlxcdGV4dHtcXHRleHRiZntmbiB9fSBcXGJ1bGxldDogXFx0ZXh0e2ludH0gXFxSaWdodGFycm93Il0sWzEsMiwiKyJdLFswLDMsIlxcYnVsbGV0Il0sWzIsMywiMiJdLFswLDEsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSwyLCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJub25lIn19fV0sWzIsMywiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoibm9uZSJ9fX1dLFsyLDQsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMywxLCIiLDAseyJjdXJ2ZSI6LTJ9XV0=
+\[\begin{tikzcd}
+	& {\text{\textbf{fn }} \bullet: \text{int} \Rightarrow} \\
+	& {\text{\textbf{fn }} \bullet: \text{int} \Rightarrow} \\
+	& {+} \\
+	\bullet && 2
+	\arrow[no head, from=1-2, to=2-2]
+	\arrow[no head, from=2-2, to=3-2]
+	\arrow[no head, from=3-2, to=4-1]
+	\arrow[no head, from=3-2, to=4-3]
+	\arrow[color={rgb,255:red,214;green,92;blue,92}, curve={height=-12pt}, from=4-1, to=2-2]
+\end{tikzcd}\]
+\end{minipage}
+\(\ne\)
+\begin{minipage}{0.435\textwidth}
+    \[
+        \text{\textbf{fn }} \cdot: \text{int} \Rightarrow (\text{\textbf{fn}}\ \cdot: \text{int} \Rightarrow v_1 + 2)
+    \]
+
+    \vspace{10px}
+
+    % https://q.uiver.app/#q=WzAsNSxbMSwwLCJcXHRleHR7XFx0ZXh0YmZ7Zm4gfX0gXFxidWxsZXQ6IFxcdGV4dHtpbnR9IFxcUmlnaHRhcnJvdyJdLFsxLDEsIlxcdGV4dHtcXHRleHRiZntmbiB9fSBcXGJ1bGxldDogXFx0ZXh0e2ludH0gXFxSaWdodGFycm93Il0sWzEsMiwiKyJdLFswLDMsIlxcYnVsbGV0Il0sWzIsMywiMiJdLFswLDEsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMSwyLCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJub25lIn19fV0sWzIsMywiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoibm9uZSJ9fX1dLFsyLDQsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6Im5vbmUifX19XSxbMywxLCIiLDAseyJjdXJ2ZSI6LTJ9XV0=
+\[\begin{tikzcd}
+	& {\text{\textbf{fn }} \bullet: \text{int} \Rightarrow} \\
+	& {\text{\textbf{fn }} \bullet: \text{int} \Rightarrow} \\
+	& {+} \\
+	\bullet && 2
+	\arrow[no head, from=1-2, to=2-2]
+	\arrow[no head, from=2-2, to=3-2]
+	\arrow[no head, from=3-2, to=4-1]
+	\arrow[no head, from=3-2, to=4-3]
+	\arrow[color={rgb,255:red,214;green,92;blue,92}, curve={height=-24pt}, from=4-1, to=1-2]
+\end{tikzcd}\]
+\end{minipage}
+\end{center}
+
+\newpage
+
+\subsection{Free Variables}
+
+Say the free variables of an expression \(e\) are the set of variables \(x\) for which there is an occurence of \(x\) free in \(e\)
+
+\begin{alignat*}{2}
+    & \text{\textbf{fv}}(n) &&=\ \ \{\}\\
+    & \text{\textbf{fv}}(b) &&=\ \ \{\}\\
+    & \text{\textbf{fv}}(!\ell ) &&=\ \ \{\}\\
+    & \text{\textbf{fv}}(\text{\textbf{skip}}) &&=\ \ \{\}\\
+    & \text{\textbf{fv}}(x) &&=\ \ \{x\}\\
+    & \text{\textbf{fv}}(\ell \coloneq e) &&=\ \ \text{\textbf{fv}}(e)\\
+    & \text{\textbf{fv}}( \text{\textbf{fn}}\ x: T \Rightarrow e) \ \ &&=\ \ \text{\textbf{fv}}(e) - \{x\}\\
+    & \text{\textbf{fv}}(e_{1}\ \ e_{2}) &&=\ \ \text{\textbf{fv}}(e_{1}) \cup \text{\textbf{fv}}(e_{2})\\
+    & \text{\textbf{fv}}(e_{1}\ op\ e_{2}) &&=\ \ \text{\textbf{fv}}(e_{1}) \cup \text{\textbf{fv}}(e_{2})\\
+    & \text{\textbf{fv}}(e_{1}; e_{2}) &&=\ \ \text{\textbf{fv}}(e_{1}) \cup \text{\textbf{fv}}(e_{2})\\
+    & \text{\textbf{fv}}(\text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ e_{2}) &&=\ \ \text{\textbf{fv}}(e_{1}) \cup \text{\textbf{fv}}(e_{2})\\
+    & \text{\textbf{fv}}(\text{\textbf{if}}\ e_{1}\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3})\ \ &&=\ \ \text{\textbf{fv}}(e_{1}) \cup \text{\textbf{fv}}(e_{2}) \cup \text{\textbf{fv}}(e_{3})\\
+\end{alignat*}
+
+We say \(e\) is closed if \(\ \ \text{\textbf{fv}}(e) = \{\}\)
+
+\vspace{5px}
+
+If \(E\) is a set of expressions, write \(\text{\textbf{fv}}(E)\) for \(\displaystyle \bigcup_{e\ \in\ E} \text{\textbf{fv}}(e)\)
+
+
+\subsubsection{Substitution}
+
+The semantics for functions will involve substituting actual paramaters for formal parameters.
+
+\vspace{5px}
+
+Write \(\{e / x\}e'\) (Can also use the notation from Computation Theory, \(e'[e / x]\)) for the result of substituting \(e\) for all free occurences of \(x\) in \(e'\)
+
+\begin{alignat*}{3}
+    &\{e / z\}x &&=\ \ \begin{cases}
+        \ e & \text{if}\ x = z\\
+        \ x\quad & \text{otherwise}
+    \end{cases}\\
+    &\{e / z\} \big(\text{\textbf{fn}}\ x: T \Rightarrow e_1\big)\ \ &&=\ \ \text{\textbf{fn}}\ x: T \Rightarrow \big(\{e / z\} e_{1}\big) \qquad &&\text{if}\ \ \ \ x \neq z\ \ \ \ \ \ (^*)\\
+    & && && \text{and}\ x \not\in \text{\textbf{fv}}(e) \ (^*)\\
+    &\{e / z\}(e_{1}\ e_{2}) &&= \ \ \big(\{e / z\}e_{1}\big)\ \big(\{e / z\}e_{2}\big)\\
+    &\ \ \ \ \ \ \ \vdots &&\phantom{aaaaaaaaaaaa} \vdots
+\end{alignat*}
+
+If \((^*)\) is not true, we first have to pick an alpha-variant of \(\text{\textbf{fn}}\ x: T \Rightarrow e_{1}\) to make it true
+
+\subsubsection{Simultaneous Substitution}
+
+A substitution \(\sigma\) is a finite partial function from variables to expressions.
+
+\vspace{5px}
+
+Write \(\sigma\) as \(\{e_1 / x_1, \dots, e_k / x_k\}\) instead of \(\{x_1 \mapsto e_{1}, \dots x_k \mapsto e_{k}\}\)
+
+\vspace{10px}
+
+Write \( \text{dom}(\sigma)\) for the set of variables in the domain of \(\sigma\) and \( \text{ran}(\sigma)\) for the set of 
+expressions od \(\sigma\), ie:
+
+\begin{alignat*}{2}
+    & \text{dom}(\{e_1 / x_1, \dots, e_k / x_k\}) \ \ &&= \ \ \{x_{1}, \dots, x_{k}\}\\
+    & \text{ran}(\{e_1 / x_1, \dots, e_k / x_k\}) \ \ &&= \ \ \{e_{1},\, \dots,\:\! e_{k}\}\\
+\end{alignat*}
+
+\newpage
+
+Define the application of simultaneous substitution to a term by:
+\begin{alignat*}{3}
+    &\sigma x &&=\begin{cases}
+        \ \sigma x & \text {if } x \in \operatorname{dom}(\sigma) \\
+        \ x \qquad & \text {otherwise }
+    \end{cases}\\
+    &\sigma n &&= \ \ n \\
+    &\sigma(b) &&= \ \ b \\
+    &\sigma(\text{\textbf{skip}}) &&=\ \ \text{\textbf{skip}} \\
+    &\sigma(!\ell) &&= \ \ \ !\ell \\
+    &\sigma(\ell:=e) &&= \ \ \ell:=\sigma(e) \\
+    &\sigma\left(e_1\ e_2\right) &&= \ \ \left(\sigma\ e_1\right)\left(\sigma\ e_2\right) \\
+    &\sigma\left(e_1 ; e_2\right) &&= \ \ \sigma\left(e_1\right);\ \sigma\left(e_2\right) \\
+    &\sigma\left(e_1 \text{\textbf{ op }}  e_2\right) &&= \ \ \sigma\left(e_1\right) \text{\textbf{ op }} \sigma\left(e_2\right) \\
+    &\sigma\left(\text{\textbf{if }} e_1\ \text{\textbf{then}}\ e_2\ \text{\textbf{else}}\ e_3\right)\ \ &&= \ \ \text{\textbf{if}}\ \sigma\left(e_1\right)\ \text{\textbf{then}}\ \sigma\left(e_2\right)\ \text{\textbf{else}}\ \sigma\left(e_3\right) \\
+    &\sigma\left(\text{\textbf{while}}\ e_1\ \text{\textbf{do}}\ e_2\right) &&= \ \ \text{\textbf{while}}\ \sigma\left(e_1\right)\ \text{\textbf{do}}\ \sigma\left(e_2\right)\\
+    &\sigma(\mathbf{fn}\ x: T \Rightarrow e) &&=\ \ \mathbf{fn}\ x: T \Rightarrow(\sigma\ e) \quad &&\,\text { if } x \notin \operatorname{dom}(\sigma) \text { and } x \notin \text{\textbf{fv}}(\operatorname{ran}(\sigma))\left(^*\right)
+\end{alignat*}
+
+Where \((^*)\) is similar to the non-simultaneous case, where we would choose an alpha-variant to make it true.
+
+\vspace{10px}
+
+\subsection{Function Behaviour}
+
+\subsubsection{Call-by-Value (CBV), what we use}
+
+For this method we reduce the LHS of an application to a \(\text{\textbf{fn}}\)-term (which is now a value),
+then arguments to values, then replace all occurrences of the formal parameter in the \(\text{\textbf{fn}}\) term by that value
+
+\[
+    v ::= b \ |\ n\ |\ \text{\textbf{skip}} \ |\  \text{\textbf{fn}}\ x: T \Rightarrow e
+\]
+
+\begin{alignat*}{2}
+    &( \text{app}1) \quad &&\begin{prooftree}
+        \hypo{\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle}
+        \infer1{\langle e_{1}\ e_{2}, s \rangle \longrightarrow \langle e_1'\ e_{2}, s' \rangle}
+    \end{prooftree}\\[10px]
+    &( \text{app}2) \quad &&\begin{prooftree}
+        \hypo{\langle e_{2}, s \rangle \longrightarrow \langle e_{2}', s' \rangle}
+        \infer1{\langle v\ e_{2}, s \rangle \longrightarrow \langle v\ e_{2}', s' \rangle}
+    \end{prooftree}
+\end{alignat*}
+
+\[
+    ( \text{fn}) \quad \langle (\text{\textbf{fn}}\ x: T \Rightarrow e)\ v, s \rangle \longrightarrow  \langle \{v / x\}e, s \rangle  
+\]
+
+\subsubsection{Call-by-Name (CBN)}
+
+For this method we reduce the LHS of an application to a \(\text{\textbf{fn}}\)-term (which is now a value),
+then replace all occurrences of the formal parameter in the \(\text{\textbf{fn}}\) term by the argument
+
+\[
+    v ::= b \ |\ n\ |\ \text{\textbf{skip}} \ |\  \text{\textbf{fn}}\ x: T \Rightarrow e
+\]
+
+\[
+    ( \text{CBN-app}) \quad\begin{prooftree}
+        \hypo{\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle}
+        \infer1{\langle e_{1}\ e_{2}, s \rangle \longrightarrow \langle e_1'\ e_{2}, s' \rangle}
+    \end{prooftree}
+\]
+
+\[
+    ( \text{fn}) \quad \langle (\text{\textbf{fn}}\ x: T \Rightarrow e)\ e_2, s \rangle \longrightarrow  \langle \{e_2 / x\}e, s \rangle  
+\]
+
+\newpage
+
+\subsubsection{Full Beta}
+
+Allow both left and right-hand sides of application to reduce. At any point where the LHS has reduced to a \(\text{\textbf{fn}}\)-term, replace all
+occurences of the formal parameter in the \(\text{\textbf{fn}}\)-term by the argument.
+
+\vspace{5px}
+
+Allow reductions inside lambdas.
+
+\begin{alignat*}{2}
+    &( \text{beta-app}1) \quad &&\begin{prooftree}
+        \hypo{\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle}
+        \infer1{\langle e_{1}\ e_{2}, s \rangle \longrightarrow \langle e_1'\ e_{2}, s' \rangle}
+    \end{prooftree}\\[10px]
+    &( \text{beta-app}2) \quad &&\begin{prooftree}
+        \hypo{\langle e_{2}, s \rangle \longrightarrow \langle e_{2}', s' \rangle}
+        \infer1{\langle e_{1}\ e_{2}, s \rangle \longrightarrow \langle e_{1}\ e_{2}', s' \rangle}
+    \end{prooftree}
+\end{alignat*}
+
+\begin{alignat*}{2}
+    &( \text{beta-fn}1) \quad &&\langle (\text{\textbf{fn}}\ x: T \Rightarrow e)\ e_2, s \rangle \longrightarrow  \langle \{e_2 / x\}e, s \rangle\\[10px]
+    &( \text{beta-fn}2) \quad &&\begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer1{\langle (\text{\textbf{fn}}\ x: T \Rightarrow e), s \rangle \longrightarrow  \langle (\text{\textbf{fn}}\ x: T \Rightarrow e'), s \rangle}
+    \end{prooftree}
+\end{alignat*}
+
+This reduction relation includes the CBV and CBN relations, and also reduction inside lambdas.
+
+\vspace{5px}
+
+We could also do \textbf{Normal-order reduction} as seen in computation theory, (leftmost, outermost variant of full beta).
+
+
+\vspace{20px}
+
+We use \textbf{Call-By-Value} from now on
+
+\vspace{20px}
+
+\subsection{Local Definitions and Recursive Functions}
+
+For readability, we want to be able to name definitions, and to restrict their scope, so we add
+
+\[
+    \text{\textbf{let val }} x: T = e_{1}\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}
+\]
+
+This \(x\) is a binder, binding any free occurences of \(x\) in \(e_2\).
+
+\vspace{5px}
+
+Can regard this as syntactic sugar:
+
+\[
+    \text{\textbf{let val }} x: T = e_{1}\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}\ \ \rightsquigarrow\ \ \big(\text{\textbf{fn }} x: T \Rightarrow e_{2}\big) e_{1}
+\]
+
+Our alpha naming convention means that this is really a local definition - there is no way to refer to the locally-defined variable outside of the \textbf{let val}.
+
+
+To allow for recursive definitions we could add something like:
+
+\[
+    \text{\textbf{let val rec }} x: T = e\ \text{\textbf{in}}\ e'\ \text{\textbf{end}}
+\]
+
+Where \(x\) binds in both \(e\) and \(e'\). But this leads to some weird things in a CBV language.
+
+\[
+    \text{\textbf{let val rec }} x: \text{int} = 3 :: x\ \text{\textbf{in}}\ x\ \text{\textbf{end}}
+\]
+
+In a CBN language, it is reasonable to allow this kind of thing, as will only compute as much as needed. In a CBV language, would usually disallow,
+allowing recursive definitions only of functions. So we need to specialise the \textbf{let val rec } construct to only allow recursion at function types
+and only of function values.
+
+\[
+    \text{\textbf{let val rec }} x: T_{1} \to T_{2} = \big(\text{\textbf{fn}}\ y: T_{1} \Rightarrow e_{1}\big)\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}
+\]
+
+Here, the \(y\) binds in \(e_1\); the \(x\) binds in \(\big(\text{\textbf{fn}}\ y: T_{1} \Rightarrow e_{1}\big)\) and \(e_2\)
+
+\newpage
+
+\subsection{Full L2 Operational Semantics}\label{L2-collected-semantics}
+
+Additions to \fullref{L1-collected-semantics}
+
+\begin{alignat*}{2}
+    &( \text{app}1) \quad &&\begin{prooftree}
+        \hypo{\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle}
+        \infer1{\langle e_{1}\ e_{2}, s \rangle \longrightarrow \langle e_1'\ e_{2}, s' \rangle}
+    \end{prooftree}\\[10px]
+    &( \text{app}2) \quad &&\begin{prooftree}
+        \hypo{\langle e_{2}, s \rangle \longrightarrow \langle e_{2}', s' \rangle}
+        \infer1{\langle v\ e_{2}, s \rangle \longrightarrow \langle v\ e_{2}', s' \rangle}
+    \end{prooftree}
+\end{alignat*}
+
+\[
+    ( \text{fn}) \quad \langle (\text{\textbf{fn}}\ x: T \Rightarrow e)\ v, s \rangle \longrightarrow  \langle \{v / x\}e, s \rangle  
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle  }
+        \infer[left label = (let1)]1{\langle \text{\textbf{let}}\ \text{\textbf{val}}\ x: T = e_{1}\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}, s \rangle \longrightarrow \langle \text{\textbf{let}}\ \text{\textbf{val}}\ x: T = e_{1}'\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}, s' \rangle}
+    \end{prooftree}
+\]
+
+\vspace{5px}
+
+\[
+    ( \text{let}2) \quad \langle \text{\textbf{let}}\ \text{\textbf{val}}\ x: T = v\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}, s \rangle \longrightarrow \langle \{v / x\}e_{2}, s \rangle
+\]
+\begin{alignat*}{1}
+    ( \text{letrecfn}) \quad &\langle \text{\textbf{let val rec}}\ x: T_{1} \to T_2 = (\text{\textbf{fn}}\ y: T_1 \Rightarrow e_{1})\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}}, s \rangle\\
+    \longrightarrow\ \ &\langle \{(\text{\textbf{fn}}\ y: T_1 \Rightarrow \text{\textbf{let val rec}}\ x: T_{1} \to T_2 = (\text{\textbf{fn}}\ y: T_1 \Rightarrow e_{1})\ \text{\textbf{in}}\ e_{1}\ \text{\textbf{end}}) / x\} e_{2}, s \rangle
+\end{alignat*}
+
+\newpage
+
+
+\subsection{Function Typing}
+
+Before, \(\Gamma\) gave the types of store locations; it ranged over \(\text{\textbf{TypeEnv}}\) which was the set of all finite partial functions
+from locations \(\mathbb{L}\) to \(T_{loc}\).
+
+\vspace{5px}
+
+Now, it must also give assumptions on the types of variables:
+
+Type environments \(\Gamma\) are now pairs of a \(\Gamma_{loc}\) and \(\Gamma_{var}\) with the latter being a partial function from \(\mathbb{X}\) to \(T\).
+
+\vspace{10px}
+
+We write 
+\[
+    \text{dom}(\Gamma) = \text{dom}(\Gamma_{loc})\ \ \cup\ \ \text{dom}(\Gamma_{var})
+\]
+If \(x \not\in \text{dom}(\Gamma_{var})\), write \(\Gamma, x:T\) for the pair of \(\Gamma_{loc}\) and the partial function which maps \(x\) to \(T\)
+but otherwise is like \(\Gamma_{var}\).
+
+\begin{theo}[Progress]{}
+    If \(e\) closed and \(\Gamma \vdash e: T\) and \( \text{dom}(\Gamma) \subseteq \text{dom}(s)\) then either \(e\) is a value or there exists
+    \(e', s'\) such that \(\langle e,s \rangle \longrightarrow \langle e', s' \rangle\)
+\end{theo}
+
+\begin{theo}[Type Preservation]{}
+    If \(e\) closed and \(\Gamma \vdash e: T\) and \( \text{dom}(\Gamma) \subseteq \text{dom}(s)\) and \(\langle e,s \rangle \longrightarrow \langle e', s' \rangle\)
+    then \(\Gamma \vdash e': T\) and \(e'\) closed \( \text{dom}(\Gamma) \subseteq \text{dom}(s')\)
+\end{theo}
+
+
+\begin{theo}[Normalisation]{}
+    In the sublanguage without while loops or store operations, if \(\Gamma \vdash e: T\) and \(e\) closed then ther does not exist an infinite
+    reduction sequence \(\langle e, \{\} \rangle \longrightarrow \langle e_{1}, \{\} \rangle \longrightarrow \langle e_{2}, \{\} \rangle \longrightarrow \dots\)
+\end{theo}
+
+\subsection{L2 Collected Typing System}\label{L2-collected-types}
+
+Additions to \fullref{L1-collected-types}
+
+\vspace{10px}
+
+Type environments \(\Gamma\) are now pairs of a \(\Gamma_{loc}\) and \(\Gamma_{var}\)
+
+\[
+\begin{gathered}
+\text { (var) } \quad \Gamma \vdash x: T \quad \text { if } \Gamma(x)=T \\[10px]
+(\mathrm{fn}) \quad \frac{\Gamma, x: T \vdash e: T^{\prime}}{\Gamma \vdash \text{\textbf{fn}}\ x: T \Rightarrow e: T \rightarrow T^{\prime}} \\[10px]
+(\mathrm{app})\quad \frac{\Gamma \vdash e_1: T \rightarrow T^{\prime} \quad \Gamma \vdash e_2: T}{\Gamma \vdash e_1 e_2: T^{\prime}} \\[10px]
+\text { (let) }\quad \frac{\Gamma \vdash e_1: T \quad \Gamma, x: T \vdash e_2: T^{\prime}}{\Gamma \vdash \text{\textbf{let val }} x: T=e_1 \text{ \textbf{in} } e_2\ \text{\textbf{end}}:T^{\prime}} \\[10px]
+\text { (let rec fn) }\quad \frac{\Gamma, x: T_1 \rightarrow T_2, y: T_1 \vdash e_1: T_2 \quad \quad \quad \Gamma, x: T_1 \rightarrow T_2 \vdash e_2: T}{\Gamma \vdash \text {\textbf{  let val rec }} x: T_1 \rightarrow T_2=\left(\text{\textbf{fn}}\ y: T_1 \Rightarrow e_1\right)\ \text{\textbf{in}}\ e_2\ \text{\textbf{end}}: T}
+\end{gathered}
+\]
+
+\newpage
+
+\section{Data - L3}
+
+\subsection{Products and Sums}
+
+The \textbf{Product} type \(\ \ T_{1} * T_2\ \ \) lets you tuple together values of types \(T_1\) and \(T_2\).
+
+\vspace{5px}
+
+A product may be constructed by simply using parentheses around two expressions seperated by a comma.
+\[
+    (e_{1}, e_{2})
+\]
+
+Individual elements may be projected out of the product using either \(\#1\) or \(\#2\) for projecting the first or second expression out of the 
+product respectively. This may be seen as destructing the product type.
+\[
+    \langle \#1 (v_1, v_2), s \rangle \longrightarrow \langle v_{1}, s \rangle
+\]
+
+We however do not allow for \(\#e\ e'\) as this cannot be typechecked.
+
+\vspace{5px}
+
+Before we allow for data to be projected out of the product we must reduce the product down to a product of two values, (which itself is now a value).
+We do this with left to right reductions like the rest of the language.
+
+\[
+    \begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer1{\langle \#1\ e, s \rangle \longrightarrow \langle \#1\ e', s \rangle}
+    \end{prooftree}
+\]
+
+This will reduce down until the product is a value, meaning it only contains other values. (Similar for \#2)
+
+\vspace{30px}
+
+The \textbf{Sum} type \(\ \ T_1 + T_2\ \ \) lets us form a disjoint union, with a value of the sum type either being being a value of type \(T_1\) or a value of type \(T_2\).
+
+\vspace{5px}
+
+We construct a product type by injecting a value into the type, either inject left or inject right to create a value of type \(T_1\) or \(T_2\) respectively.
+\[
+    \text{\textbf{inl}}\ e: T \qquad \qquad \qquad \text{\textbf{inr}}\ e: T
+\]
+
+We specify the type that the expression is being injected into to maintain the unique typing property. This specifiying the type is not the type 
+inference but part of the semantics. If we did not specify then then we would have:
+\[
+    \{\} \vdash \text{\textbf{inl}}\ 3: \text{int} + \text{int} \quad \land \quad \{\} \vdash \text{\textbf{inl}}\ 3: \text{int} + \text{bool} \quad \land \quad \dots
+\]
+
+A compiler might use a type inference algorithm that can infer the type that it should be.
+
+\vspace{5px}
+
+We can determine what value a sum type is by case splitting, this can also be seen as destructing the sum type.
+\[
+    \text{\textbf{case}}\ e :T\ \text{\textbf{of  inl}}\ (x: T_1) \Rightarrow e_{1} \ |\ \text{\textbf{inr}}\ (y:T_{2}) \Rightarrow e_{2}
+\]
+
+
+\vspace{10px}
+
+\begin{center}
+    \begin{tabular}{| l | c | c |}
+        \hline
+        Type & Constructors & Destructors\\[2px]
+        \hline
+        & &\\[-5px]
+        \(T \to T\) & \(\text{\textbf{fn}}\ x:T \Rightarrow \dunder\) & \(\dunder\ e\)\\[5px]
+        \(T * T\) & \((\dunder, \dunder)\) & \(\#1\ \dunder \quad \lor \quad \#2\ \dunder\)\\[5px]
+        \(T + T\) & \(\text{\textbf{inl}}\ (\dunder) \quad \lor \quad \text{\textbf{inr}}\ (\dunder)\) & \(\text{\textbf{case}}\)\\[5px]
+        \( \text{bool}\) & \(\text{\textbf{true}} \quad \lor  \quad \text{\textbf{false}}\) & \(\text{\textbf{if}}\)\\
+        \hline
+    \end{tabular}
+\end{center}
+
+\newpage
+
+\subsection{Datatypes and Records}
+
+\textbf{Records} are a generalisation of products. Labels \(lab \in \mathbb{LAB}\) for a set \(\mathbb{LAB} = \{p,q, \dots\}\). Each label
+has a corresponding expression associated with it, which can be projected out using the label.
+
+\[
+    \#q\ \{p:(x+2), q:(y+1), r:(5)\} \longrightarrow^* y+1
+\]
+
+\subsection{Mutable Store}
+
+We are changing how the store works now from L1 and L2, in those languages we could only store integers, but we would like to store any value. We
+also cannot create any new locations during the runtime and thus they must all exist at the beginning. Functions cannot also abstact on
+locations.
+
+\vspace{5px}
+
+We remove the specific intref type and replace the type with a \(T\) ref type, and remove the specific assign and deref rules in favour of
+assigning an expression to another, and derefencing an expression etc., making everything more general.
+
+\vspace{5px}
+
+We make locations variables now, and the store \(s\) was a finite partial map from \(\mathbb{L}\) to \(\mathbb{Z}\) now we take stores to be
+the finite partial map from \(\mathbb{L}\) to the set of all values.
+
+\vspace{10px}
+
+\subsection{Full L3 Operational Semantics}
+
+Additions to \fullref{L2-collected-semantics}
+
+\begin{alignat*}{2}
+    &\begin{prooftree}
+        \hypo{\langle e_{1}, s \rangle \longrightarrow \langle e_{1}', s' \rangle}
+        \infer[left label = (pair1)]1{\langle (e_{1}, e_{2}), s \rangle \longrightarrow \langle (e_{1}', e_{2}), s' \rangle }
+    \end{prooftree}\\[10px]
+    &\begin{prooftree}
+        \hypo{\langle e_{2}, s \rangle \longrightarrow \langle e_{2}', s' \rangle}
+        \infer[left label = (pair2)]1{\langle (v, e_{2}), s \rangle \longrightarrow \langle (v, e_{2}'), s' \rangle }
+    \end{prooftree}\\[10px]
+    &( \text{proj}1)\ \, \langle \#1(v_{1}, v_{2}), s \rangle \longrightarrow \langle v_{1}, s' \rangle \qquad &&( \text{proj}2)\ \, \langle \#2(v_{1}, v_{2}), s \rangle \longrightarrow \langle v_{2} s' \rangle \\[10px]
+    &\begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer[left label = (proj3)]1{\langle \#1\ \ e, s \rangle \longrightarrow \langle \#1\ \ e', s' \rangle }
+    \end{prooftree} &&\begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer[left label = (proj4)]1{\langle \#2\ \ e, s \rangle \longrightarrow \langle \#2\ \ e', s' \rangle }
+    \end{prooftree}\\[10px]
+    &\ \ \ \, \begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer[left label = (inl)]1{\langle \text{\textbf{inl}}\ e:T, s \rangle \longrightarrow \langle  \text{\textbf{inl}}\ e':T, s' \rangle }
+    \end{prooftree}
+    &&\ \ \ \, \begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer[left label = (inl)]1{\langle \text{\textbf{inl}}\ e:T, s \rangle \longrightarrow \langle  \text{\textbf{inl}}\ e':T, s' \rangle }
+    \end{prooftree}\\
+\end{alignat*}
+\[
+    \begin{prooftree}
+        \hypo{\langle e, s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer[left label = (case1)]1{\begin{matrix}\ \ \ \ \, \langle \text{\textbf{case}}\ e\phantom{'} :T\ \text{\textbf{of  inl}}\ (x: T_1)  \Rightarrow e_{1} \ |\ \text{\textbf{inr}}\ (y:T_{2}) \Rightarrow e_{2}, s \rangle\\ \longrightarrow \langle \text{\textbf{case}}\ e' :T\ \text{\textbf{of  inl}}\ (x: T_1)  \Rightarrow e_{1} \ |\ \text{\textbf{inr}}\ (y:T_{2}) \Rightarrow e_{2}, s' \rangle \end{matrix}}
+    \end{prooftree}
+\]
+
+\[
+    \text{(case2)}\ \ \langle \text{\textbf{case}}\ \text{\textbf{inl}}\ v :T\ \text{\textbf{of  inl}}\ (x: T_1)  \Rightarrow e_{1} \ |\ \text{\textbf{inr}}\ (y:T_{2}) \Rightarrow e_{2}, s \rangle \longrightarrow \langle \{v / x\}e_{1}, s \rangle 
+\]
+\[
+    \text{(case3)}\ \ \langle \text{\textbf{case}}\ \text{\textbf{inr}}\ v :T\ \text{\textbf{of  inl}}\ (x: T_1)  \Rightarrow e_{1} \ |\ \text{\textbf{inr}}\ (y:T_{2}) \Rightarrow e_{2}, s \rangle \longrightarrow \langle \{v / y\}e_{2}, s \rangle 
+\]
+
+\newpage
+
+\subsection{Type Checking The Store}
+
+For L1, our type properties used \( \text{dom}(\Gamma) \subseteq \text{dom}(s)\) to express the condition `All locations mentioned in \(\Gamma\) exist in the 
+store s'.
+
+\vspace{5px}
+
+Now we require more:
+
+\begin{itemize}
+    \item For each \(\ell \in \text{dom}(s)\) need that \(s(\ell)\) is typable 
+    \item \(s(\ell )\) might contain some other locations
+\end{itemize}
+
+\begin{defin}[Well-typed Store]{}
+    Let \(\Gamma \vdash s\) if \( \text{dom}(\Gamma) = \text{dom}(s)\) and if for all \(\ell  \in \text{dom}(s)\), if \(\Gamma(\ell ) = T\ \text{ref}\)
+    then \(\Gamma \vdash s(\ell ): T\).
+\end{defin}
+
+\begin{theo}[Progress]{}
+    If \(e\) closed and \(\Gamma \vdash e: T\) and \(\Gamma \vdash e: T\) and \(\Gamma \vdash s\) then either \(e\) is a value or there exists \(e', s'\)
+    such that \(\langle e,s \rangle \longrightarrow \langle e', s' \rangle\).
+\end{theo}
+
+\begin{theo}[Type Preservation]{}
+    If \(e\) closed and \(\Gamma \vdash e: T\) and \(\Gamma \vdash s\) and \(\langle e,s \rangle \longrightarrow \langle e', s' \rangle\) then \(e'\) is 
+    closed and for some \(\Gamma'\) with disjoint domain to \(\Gamma\) we have \(\Gamma, \Gamma' \vdash e': T\) and \(\Gamma, \Gamma' \vdash s\).
+\end{theo}
+
+\begin{theo}[Type Safety]{}
+    If \(e\) closed and \(\Gamma \vdash e: T\) and \(\Gamma \vdash s\) and \(\langle e,s \rangle \longrightarrow^* \langle e', s' \rangle\) then either \(e'\) is 
+    a value or there exists \(e'', s''\), such that \(\langle e',s' \rangle \longrightarrow  \langle e'', s'' \rangle \)
+\end{theo}
+
+\newpage
+
+\subsection{Evaluation Contexts}
+
+Instead of having multiple individual rules we can create an evaluation context. This is especially beneficial for larger languages
+but not necessary for the L languages described here. Define evaluation contexts:
+\begin{alignat*}{1}
+    E\ \ ::=\ \ &\dunder\ \ op\ \ e \ |\ v\ \ op\ \ \dunder \ |\ \text{\textbf{if}}\ \dunder\ \text{\textbf{then}}\ e\ \text{\textbf{else}}\ e \ |\ \\
+    &\dunder;\ e \ |\ \\
+    &\dunder\ \ e \ |\ v \ \ \dunder \\
+    & \text{\textbf{let}}\ \text{\textbf{val}}\ x:T = \dunder\ \text{\textbf{in}}\ e_{2}\ \text{\textbf{end}} \ |\ \\
+    & (\dunder,\ e) \ |\ (v, \dunder) \ |\ \#1\ \dunder \ |\  \#2\ \dunder \ |\ \\
+    & \text{\textbf{inl}}\ \dunder\ \text{\textbf{of}}\ \text{\textbf{inl}}\ (x:T) \Rightarrow e \ | \ \text{\textbf{inr}}\ (x:T) \Rightarrow e \ |\ \\
+    & \{lab_1 = v_{1}, \dots,\ lab_i = \dunder,\ \dots,\ lab_k = e_k\}\ |\ \#lab\ \ \dunder\ |\ \\
+    & \dunder \coloneq e \ |\ v \coloneq \dunder \ |\ !\dunder \ |\ \text{ref}\ \dunder
+\end{alignat*}
+
+And we now have the single context rule:
+\[
+    \begin{prooftree}
+        \hypo{\langle e,s \rangle \longrightarrow \langle e', s' \rangle}
+        \infer[left label = (eval)\(\ \)]1{\langle E[e], s \rangle \longrightarrow \langle E[e'], s' \rangle}
+    \end{prooftree}
+\]
+\[
+    (\text{Where } E[e] \text{ means that we substitute an expression } e \text{ into on the holes } \dunder \text{ in the above evaluation context})
+\]
+
+We replace all the rules with premises with the above rule, we also add the computation rules as well 
+
+( (op+), (op\( \geq\)), (if1), (if2), ... )
+
+
+\newpage
+
+\section{Subtyping and Objects}
+
+The type system so far is very rigid we would like to introduce Subtype Polymorphism.
+
+\vspace{10px}
+
+Any value of type \(\{p: \text{int}, q: \text{int}\}\) can be used wherever a value of type \(\{p: \text{int}\}\) is expected.
+
+\vspace{5px}
+
+We introduce a subtyping relation between types, written \(T <: T'\), read as \(T\) is a subtype of \(T'\)
+
+\[
+    \{p: \text{int}, q: \text{int}\} \ <: \ \{p: \text{int}\} \ <: \ \{\}
+\]
+
+Introduce a subsumption rule
+
+\[
+    \begin{prooftree}
+        \hypo{\Gamma \vdash e: T}
+        \hypo{T <: T'}
+        \infer[left label = (sub)]2{\Gamma \vdash e: T'}
+    \end{prooftree}
+\]
+
+The Subtype Relation
+
+\[
+    \begin{prooftree}
+        \hypo{}
+        \infer[left label = (s-refl)]1{T <: T}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{T <: T'}
+        \hypo{T' <: T''}
+        \infer[left label = (s-trans)]2{T <: T''}
+    \end{prooftree}
+\]
+
+\[
+    ( \text{s-record-width}) \ \ \{lab_1:T_1, \dots, lab_n:T_n, \dots, lab_{n+k}: T_{n+k}\} <: \{lab_1:T_1, \dots, lab_n:T_n\}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{T_1 <: T_1'}
+        \hypo{\dots}
+        \hypo{T_n <: T_n'}
+        \infer[left label = (s-record-depth)]3{\{lab_1:T_1, \dots, lab_n:T_n\} <: \{lab_1:T_1', \dots, lab_n:T_n'\}}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{\pi \text{ a permutation of } 1, \dots, n}
+        \infer[left label = (s-record-depth)]1{\{lab_1:T_1, \dots, lab_n:T_n\} <: \{lab_{\pi(1)}:T_{\pi(1)}, \dots, lab_{\pi(n)}:T_{\pi(n)}\}}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{T_1' <: T_{1}}
+        \hypo{T_2 <: T_{2}'}
+        \infer[left label = (s-fn)]2{T_1 \to T_2 <: T_{1}' \to T_{2}'}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{T_1 <: T_{1}'}
+        \hypo{T_2 <: T_{2}'}
+        \infer[left label = (s-pair)]2{T_1 * T_2 <: T_{1}' * T_{2}'}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{T_1 <: T_{1}'}
+        \hypo{T_2 <: T_{2}'}
+        \infer[left label = (s-pair)]2{T_1 * T_2 <: T_{1}' * T_{2}'}
+    \end{prooftree}
+\]
+
+\newpage
+
+\section{Concurrency}
+
+\begin{alignat*}{1}
+    e\ \ ::=\ \ &n \ |\  b \ |\  e_{1} \ op \ e_{2} \ |\  \text{\textbf{if}}\ e_{1} \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3} \ |\ \\
+    &\ell \coloneq e \ |\  !l \ |\ \\
+    &\text{\textbf{()}} \ |\  e_{1};e_{2} \ |\ \\
+    &\text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ e_{2} \ |\ \\
+    & e_{1} | e_{2}
+\end{alignat*}
+
+\begin{alignat*}{2}
+    &T &&::=\ \ \text{int} \ |\ \text{bool} \ |\ \text{unit} \ |\ \text{proc}\phantom{aaaaaaaaaaaaaaaa}\\
+    &T_{loc}\ \ &&::=\ \ \text{intref}
+\end{alignat*}
+
+\begin{alignat*}{1}
+    &\begin{prooftree}
+        \hypo{\Gamma \vdash e: \text{unit}}
+        \infer[left label = (thread)]1{\Gamma \vdash e: \text{proc}}
+    \end{prooftree}\\[10px]
+    &\begin{prooftree}
+        \hypo{\Gamma \vdash e_{1}: \text{proc}}
+        \hypo{\Gamma \vdash e_{2}: \text{proc}}
+        \infer[left label = (parallel)]2{\Gamma \vdash e_{1}|e_{2}: \text{proc}}
+    \end{prooftree}
+\end{alignat*}
+
+\begin{alignat*}{1}
+    &\begin{prooftree}
+        \hypo{\langle e_1, s \rangle \longrightarrow \langle e_{2}, s \rangle}
+        \infer[left label = (parallel1)]1{\hypo{\langle e_1 | e_{2}, s \rangle \longrightarrow \langle e_{1}' | e_{2}, s \rangle}}
+    \end{prooftree}\qquad\ \\[10px]
+    &\begin{prooftree}
+        \hypo{\langle e_2, s \rangle \longrightarrow \langle e_{2}', s \rangle}
+        \infer[left label = (parallel1)]1{\hypo{\langle e_1 | e_{2}, s \rangle \longrightarrow \langle e_{1} | e_{2}', s \rangle}}
+    \end{prooftree}
+\end{alignat*}
+
+\subsection{Mutexes}
+
+Mutex names \(m \in \mathbb{M} = \{m, m_{1}, \dots, m_{n}\}\)
+
+\vspace{5px}
+
+Configurations \(\langle e, s, M \rangle\) where \(M: \mathbb{M} \longrightarrow \mathbb{B}\) is the mutex state
+
+\vspace{5px}
+
+Expressions \(e ::= \dots \ |\ \text{\textbf{lock}}\ m \ |\ \text{\textbf{unlock}}\ m\)
+
+\[
+    \begin{prooftree}
+        \hypo{}
+        \infer[left label = (lock)]1{\Gamma \vdash \text{\textbf{lock}}\ m : \text{unit}}
+    \end{prooftree}\qquad\qquad\qquad
+    \begin{prooftree}
+        \hypo{}
+        \infer[left label = (unlock)]1{\Gamma \vdash \text{\textbf{unlock}}\ m : \text{unit}}
+    \end{prooftree}
+\]
+
+\[
+    ( \text{lock}) \ \ \langle \text{\textbf{lock}}\ m, s, M \rangle  \longrightarrow  \langle (), s, M + \{m \mapsto \text{\textbf{true}}\} \rangle \quad \text{if}\ \neg M(m)
+\]
+
+\[
+    ( \text{unlock}) \ \ \langle \text{\textbf{unlock}}\ m, s, M \rangle  \longrightarrow  \langle (), s, M + \{m \mapsto \text{\textbf{false}}\} \rangle
+\]
+
+lock atomically checks the mutex is currently false and changes its state and lets the thread proceed.
+
+\vspace{10px}
+
+All other rules need to carry the mutex state around and the changes from premises to its transition.
+
+
+\subsection{An Ordered 2PL Discipline, Informally}
+
+Fix an association between locations and mutexes. For simplicity make it 1:1 - \(\ell\) with \(m\), \(l_1\) with \(m_1\) etc.
+
+\vspace{5px}
+
+Fix a lock acquisition order. For simplicity, make it \(m, m_0, m_1, m_2, \dots\)
+
+\vspace{5px}
+
+Require that each \(e_i\)
+
+\begin{itemize}
+    \item acquires the lock \(m_j\) for each location \(l_j\) it uses, before it uses it 
+    \item acquires and releases each lock in a properly bracketed way 
+    \item does not acquire any lock after it's released any lock 
+    \item acquires locks in increasing order
+\end{itemize}
+
+Then any concurrent state should never deadlock and be serializable - any execution of it should be `equivalent' to an execution of some permutaion
+that is a sequence of the expressions sequentially.
+
+\newpage
+
+\section{Semantic Equivalence}
+
+Take \(\simeq\) to the semantic equivalence relation symbol. For \(\simeq\) to be good it must obey
+
+\vspace{5px}
+
+1. Programs that result in observably different values from some initial store are not equivalent.
+\[
+    \big( \exists s, s_{1}, s_{2}, v_{1}, v_{2}. \langle e_{1},s \rangle \longrightarrow^* \langle v_{1}, s_{1} \rangle \land \langle e_{2}, s \rangle \longrightarrow^* \langle v_{2}, s_{2} \rangle \land v_{1} \neq v_{2}\big) \implies e_{1} \not\simeq e_{2}
+\]
+
+2. Programs that terminate must not be equivalent to programs that do not
+
+\vspace{5px}
+
+3. \(\simeq\) must be an equivalence relation
+\[
+    e \simeq e \qquad e_1 \simeq e_{2} \implies e_{2} \simeq e_{1} \qquad e_{1} \simeq e_{2} \simeq e_{3} \implies e_{1} \simeq e_{3}
+\]
+
+4. \(\simeq\) must be a congruence
+\[
+    \text{if}\ e_{1} \simeq e_{2} \text{ then for any context } C \text{ we must have } C[e_{1}] \simeq C[e_{2}]
+\]
+
+\vspace{5px}
+
+5. \(\simeq\) should relate as many programs as possible subject to the above
+
+\vspace{10px}
+
+\subsection{Semantic Equivalence for L1}
+
+Consider Typed L1 again.
+
+\vspace{5px}
+
+Define \(e_{1} \simeq_\Gamma^T e_{2}\) to hold iff forall \(s\) such that \( \text{dom}(\Gamma) \subseteq \text{dom}(s)\), we have \(\Gamma \vdash e_{1}: T\), \(\Gamma \vdash e_{2}:T\) and either:
+
+\[
+    \langle e_{1}, s \rangle \longrightarrow^\omega\ \ \land\ \ \langle e_{2}, s \rangle \longrightarrow^\omega
+\]
+\[
+    \text{or}
+\]
+\[
+    \exists v, s'. \ \langle e_{1}, s \rangle \longrightarrow^* \langle v, s' \rangle\ \ \land\ \ \langle e_{2}, s \rangle \longrightarrow^* \langle v,s' \rangle   
+\]
+
+With the L1 contexts being:
+\begin{alignat*}{1}
+    C\ \ ::=\ \ &\dunder\ \ op\ \ e \ |\ e_{1}\ \ op\ \ \dunder \ |\ \\
+    &\text{\textbf{if}}\ \dunder\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ e_{3} \ |\ \text{\textbf{if}}\ e_{1}\ \text{\textbf{then}}\ \dunder\ \text{\textbf{else}}\ e_{3} \ |\ \\
+    &\text{\textbf{if}}\ e_{1}\ \text{\textbf{then}}\ e_{2}\ \text{\textbf{else}}\ \dunder \ |\  \\
+    &\ell \coloneq \dunder \ |\ \\
+    &\dunder;\ e_{2} \ |\ e_{1};\ \dunder\\
+    &\text{\textbf{while}}\ \dunder\ \text{\textbf{do}}\ e_{2} \ |\ \text{\textbf{while}}\ e_{1}\ \text{\textbf{do}}\ \dunder
+\end{alignat*}
+
+Say \(\simeq_\Gamma^T\) has the congurence property if whenever \(e_{1} \simeq_\Gamma^T e_{2}\) we have, for all \(C\) and \(T'\), if \(\Gamma \vdash C[e_{1}]: T'\)
+and \(\Gamma \vdash C[e_{2}]: T'\) then \(C[e_{1}] \simeq_\Gamma^{T'} C[e_{2}]\)
+
+\vspace{10px}
+
+\subsection{Contextual Equivalence for L3}
+
+Consider typed L3 programs, \(\Gamma \vdash e_{1}: T\) and \(\Gamma \vdash e_{2}:T\).
+
+\vspace{5px}
+
+We say they are contextually equivalent if, for every context \(C\) such that \(\{\} \vdash C[e_{1}]: \text{unit}\) and \(\{\} \vdash C[e_{2}]: \text{unit}\), we either have:
+
+\[
+    \langle C[e_{1}] \{\} \rangle \longrightarrow^\omega\ \ \land\ \ \langle C[e_{2}], \{\}\rangle \longrightarrow^\omega   
+\]
+\[
+    \text{or}
+\]
+\[
+    \exists s_{1}, s_{2}. \langle C[e_{1}], \{\} \rangle \longrightarrow^* \langle \text{\textbf{skip}}, s_{1} \rangle\ \ \land\ \ \langle C[e_{2}], \{\} \rangle \longrightarrow^* \langle \text{\textbf{skip}}, s_{2} \rangle    
+\]
+
+\end{document}

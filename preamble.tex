@@ -1,0 +1,287 @@
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{scrextend}
+\usepackage{enumitem, multicol}
+\usepackage{caption}
+\usepackage{ifthen}
+\usepackage{changepage}
+\usepackage{listings}
+\usepackage{tikz-cd}
+\usetikzlibrary{arrows.meta, automata, 
+                positioning, 
+                quotes}
+\usepackage{amsmath}
+\usepackage[low-sup]{subdepth}
+\usepackage{ebproof}
+\usepackage{mdframed}
+\usepackage{calc}
+\usepackage{mathtools}
+\usepackage{forest}
+\usepackage[dvipsnames]{xcolor}
+
+
+\newlength\twound
+\settowidth{\twound}{\_}
+\newcommand{\dunder}{\rule{2\twound}{0.4pt}}
+
+\newcommand*{\fullref}[1]{\hyperref[{#1}]{\ref*{#1} \nameref*{#1}}}
+
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+
+\DeclarePairedDelimiter{\encode}{\ulcorner}{\urcorner}
+
+
+\makeatletter
+\newsavebox{\@brx}
+\newcommand{\llangle}[1][]{\savebox{\@brx}{\(\m@th{#1\langle}\)}%
+  \mathopen{\copy\@brx\kern-0.5\wd\@brx\usebox{\@brx}}}
+\newcommand{\rrangle}[1][]{\savebox{\@brx}{\(\m@th{#1\rangle}\)}%
+  \mathclose{\copy\@brx\kern-0.5\wd\@brx\usebox{\@brx}}}
+\makeatother
+
+\lstset{
+    basicstyle=\ttfamily,
+    mathescape=true,          % Enable math mode inside listings
+    columns=fullflexible      % Ensure spacing is preserved
+}
+
+\newmdenv[
+  topline=false,
+  bottomline=false,
+  rightline=false,
+  skipabove=\topsep,
+  skipbelow=\topsep
+]{siderules}
+
+\def\axiom{\infer0}
+
+\usetikzlibrary{calc}
+% `pathmorphing` is necessary to draw squiggly arrows.
+\usetikzlibrary{decorations.pathmorphing,shapes.misc}
+
+
+% A TikZ style for curved arrows of a fixed height, due to AndréC.
+\tikzset{curve/.style={settings={#1},to path={(\tikztostart)
+    .. controls ($(\tikztostart)!\pv{pos}!(\tikztotarget)!\pv{height}!270:(\tikztotarget)$)
+    and ($(\tikztostart)!1-\pv{pos}!(\tikztotarget)!\pv{height}!270:(\tikztotarget)$)
+    .. (\tikztotarget)\tikztonodes}},
+    settings/.code={\tikzset{quiver/.cd,#1}
+        \def\pv##1{\pgfkeysvalueof{/tikz/quiver/##1}}},
+    quiver/.cd,pos/.initial=0.35,height/.initial=0}
+
+% TikZ arrowhead/tail styles.
+\tikzset{tail reversed/.code={\pgfsetarrowsstart{tikzcd to}}}
+\tikzset{2tail/.code={\pgfsetarrowsstart{Implies[reversed]}}}
+\tikzset{2tail reversed/.code={\pgfsetarrowsstart{Implies}}}
+% TikZ arrow styles.
+\tikzset{no body/.style={/tikz/dash pattern=on 0 off 1mm}}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{darkred}{rgb}{0.55,0,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+%\usetikzlibrary{decorations.markings}
+
+\geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=30mm,
+ top=25mm,
+}
+
+\newcommand{\indrule}[3]{\ifstrempty{#1}{\mathrel{\raisebox{6pt}{\(\dfrac{#2}{#3}\)}}}{\mathrel{\raisebox{6pt}{(\text{#1})\ \ \(\dfrac{#2}{#3}\)}}}}
+\newcommand{\eqdef}{\overset{\text{def}}{=}}
+
+\definecolor{darkblue}{rgb}{0,0,0.55}
+
+\newcounter{quest}\setcounter{quest}{0}
+\renewcommand{\thequest}{\arabic{quest}}
+\newenvironment{quest}[1][]{%
+\ifstrempty{#1}%
+{%
+\refstepcounter{quest}%
+\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=darkblue!20]
+{\strut Question~\thequest.};}}
+%
+}%
+{
+\ifthenelse{\equal{#1}{a} \OR \equal{#1}{i} \OR \equal{#1}{1}}{\refstepcounter{quest}}{}
+\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=darkblue!20]
+{\strut Question~\thequest.#1)};}}%
+}%
+\mdfsetup{innertopmargin=10pt,linecolor=darkblue!20,%
+linewidth=2pt,topline=true,%
+frametitleaboveskip=\dimexpr-\ht\strutbox\relax
+}
+\begin{mdframed}[]\relax%
+}{\end{mdframed}}
+
+
+
+\setlength{\parindent}{0px}
+
+\usetikzlibrary{decorations.markings}
+
+
+\geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=30mm,
+ top=25mm,
+}
+
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\pdv}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\lbold}[1]{\textbf{\large{ #1}}}
+\newcommand{\minus}{\scalebox{1.0}[1.0]{\(-\)}}
+\newcommand{\boldminus}{\(\boldsymbol{-}\)}
+\newcommand{\addtopstrut}{\rule[5pt]{0pt}{.7\baselineskip}}%
+\newcommand{\addbottomstrut}{\rule[-5pt]{0pt}{0pt}}%
+
+\newcounter{theo}[section]\setcounter{theo}{0}
+\renewcommand{\thetheo}{\arabic{section}.\arabic{theo}}
+\newenvironment{theo}[2][]{%
+\refstepcounter{theo}%
+\ifstrempty{#1}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=red!20]
+{\strut Theorem~\thetheo};}}
+}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=red!20]
+{\strut Theorem~\thetheo:~#1};}}%
+}%
+\mdfsetup{innertopmargin=10pt,linecolor=red!20,%
+linewidth=2pt,topline=true,%
+frametitleaboveskip=\dimexpr-\ht\strutbox\relax
+}
+\begin{mdframed}[]\relax%
+\label{#2}}{\end{mdframed}}
+
+\definecolor{pastelgreen}{RGB}{193, 225, 193}
+
+\newcounter{lem}[section]\setcounter{lem}{0}
+\renewcommand{\thelem}{\arabic{section}.\arabic{lem}}
+\newenvironment{lem}[2][]{%
+\refstepcounter{lem}%
+\ifstrempty{#1}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=pastelgreen]
+{\strut Lemma~\thelem};}}
+}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=pastelgreen]
+{\strut Lemma~\thelem:~#1};}}%
+}%
+\mdfsetup{innertopmargin=10pt,linecolor=pastelgreen,%
+linewidth=2pt,topline=true,%
+frametitleaboveskip=\dimexpr-\ht\strutbox\relax
+}
+\begin{mdframed}[]\relax%
+\label{#2}}{\end{mdframed}}
+
+\definecolor{darkblue}{rgb}{0,0,0.55}
+
+\newcounter{defin}[section]\setcounter{defin}{0}
+\renewcommand{\thedefin}{\arabic{section}.\arabic{defin}}
+\newenvironment{defin}[2][]{%
+\refstepcounter{defin}%
+\ifstrempty{#1}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=darkblue!20]
+{\strut Definition~\thedefin};}}
+}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=darkblue!20]
+{\strut Definition~\thedefin:~#1};}}%
+}%
+\mdfsetup{innertopmargin=10pt,linecolor=darkblue!20,%
+linewidth=2pt,topline=true,%
+frametitleaboveskip=\dimexpr-\ht\strutbox\relax
+}
+\begin{mdframed}[]\relax%
+\label{#2}}{\end{mdframed}}
+
+\newcounter{prf}[section]\setcounter{prf}{0}
+\renewcommand{\theprf}{\arabic{section}.\arabic{prf}}
+\newenvironment{prf}[2][]{%
+\refstepcounter{prf}%
+\ifstrempty{#1}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=red!20]
+{\strut Proof~\theprf};}}
+}%
+{\mdfsetup{%
+frametitle={%
+\tikz[baseline=(current bounding box.east),outer sep=0pt]
+\node[anchor=east,rectangle,fill=red!20]
+{\strut Proof~\thetheo:~#1};}}%
+}%
+\mdfsetup{innertopmargin=10pt,linecolor=red!20,%
+linewidth=2pt,topline=true,%
+frametitleaboveskip=\dimexpr-\ht\strutbox\relax
+}
+\begin{mdframed}[]\relax%
+\label{#2}}{\end{mdframed}}
+
+
+
+\setlength{\parindent}{0px}
+
+\tikzset{
+  ctrlpoint/.style={%
+    draw=gray,
+    circle,
+    inner sep=0,
+    minimum width=1ex,
+  }
+}
+
+% cSpell:disable
+
+\newcommand\Bezier[4]{% \bezier (lowercase 'b') was already defined elsewhere
+  \node (p1) [ctrlpoint,label=90:\(P_1\)] at (#1) {};
+  \node (p2) [ctrlpoint,label=90:\(P_2\)] at (#2) {};
+  \node (p3) [ctrlpoint,label=90:\(P_3\)] at (#3) {};
+  \node (p4) [ctrlpoint,label=90:\(P_4\)] at (#4) {};
+  \draw [gray] (p1) -- (p2) -- (p3) -- (p4);
+  \draw [blue] (#1) .. controls (#2) and (#3) .. (#4);
+}
+
+% cSpell:enable

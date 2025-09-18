@@ -1,0 +1,2173 @@
+\documentclass{article}
+
+
+\input{../preamble.tex}
+\usepackage{adjustbox}
+\DeclareRobustCommand{\rchi}{{\mathpalette\irchi\relax}}
+\newcommand{\irchi}[2]{\raisebox{\depth}{$#1\chi$}}
+
+
+\title{Computation Theory}
+\author{Simon}
+\begin{document}
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+\subsection{Hilbert's Entscheidungsproblem}
+
+\begin{defin}[Hilbert's Entscheidungsproblem]{}
+    Is there an algorithm which when fed any statement in the formal language of first-order
+    arithmetic, determines in a finite number of steps whether or not the statement is
+provable from Peano's axioms for arithmetic, using the usual rules of first-order logic?
+\end{defin}
+
+Useful as for example could run it on the following:
+
+\[
+    \forall k > 1 : \exists p,q : (2k = p + q \land prime(p) \land prime(q))
+\]
+
+Which would solve Goldbach's Conjecture. The algorithm wouldn't tell us the proof steps
+just whether or whether not it is a true statement.
+
+\vspace{20px}
+
+Entscheidungsproblem means ``decision Problem''. 
+
+\vspace{10px}
+
+\subsection{Decision Problems}
+
+Given:
+
+\begin{itemize}
+    \item a set \(S\) whose elements are finite data structures of some kind
+    \item a property \(P\) of elements \(S\) (i.e. a function \(P: S \to \{\bot \top\}\))
+\end{itemize}
+
+The associated decision problem is to determine whether an element \(s \in S\) has property \(P\) or not:
+
+\begin{siderules}
+    Find an \textbf{algorithm} which terminates with a result 0 or 1 when fed an element \(s \in S\) and yields
+    result 1 when fed \(s\) if and only if \(s\) has property \(P\).
+\end{siderules}
+
+At the time Hilbert posed this idea there was no precise formal defintion of an algorithm just examples for example:
+
+\begin{itemize}
+    \item Euclids algorithm
+    \item Multiplying numbers in decimal place notation
+    \item Extracting square roots to any desired accuracy
+\end{itemize}
+
+However these examples share certain common features:
+
+\begin{itemize}
+    \item A \textbf{finite} description of the procedure in terms of elementary operations
+    \item It is \textbf{deterministic} (the next step is uniquely determined if there is one)
+    \item The procedure may not terminate on some input data, but we can recognise when it does terminate
+    and what the result is.
+\end{itemize}
+
+
+Negative solutions to the Entscheidungsproblem were proposed by Church who used Lambda-Calculus, and Turing 
+who useed Turing Machines, both used different representations of algorithms which could be regarded as data.
+This means that other algorithms could be used on other algorithms.
+
+\newpage
+
+\subsection{Halting Problem}
+
+\begin{defin}[Halting Problem]{}
+    The \textbf{Halting Problem} is a decision problem where:
+
+    \begin{itemize}
+        \item The set \(S\) consists of all pairs (\(A,D\)), where \(A\) is an algorithm and \(D\) is a datum on 
+        which it is designed to operate on.
+        \item The property \(P\) holds for (\(A,D\)) if the algorithm \(A\), when applied to datum \(D\), eventually
+        produces a result (that is, eventually \textbf{halts} - we write \(A(D)\downarrow\) to denote this).
+    \end{itemize}
+\end{defin}
+
+
+Both Turing and Church showed the Halting Problem is Undecidable, that is, there is no algorithm \(H\) such that for all
+\((A,D) \in S\):
+\[
+    H(A,D) = \begin{cases}
+        1 & \text{If } A(D) \downarrow\\
+        0 & \text{Otherwise} 
+    \end{cases}
+\]
+
+
+\vspace{10px}
+
+\begin{prf}[Informal Proof by contradiction of the Halting Problem]{}
+    Assume there is an algorithm \(H\), and let \(C\) be the algorithm:
+
+    \begin{center}
+        ``Given an input \(A\), compute \(H(A,A)\); if \(H(A,A) = 0\) then return 1, else loop forever (don't halt)''
+    \end{center}
+
+    So:
+
+    \begin{alignat*}{2}
+        &\forall A : (C(A)\! \downarrow \ \leftrightarrow H(A,A) = 0) \qquad \qquad &&\text{Since H is total}\\
+        &\forall A : (C(A)  \leftrightarrow \neg A(A)\! \downarrow) && \text{Definition of H}
+    \end{alignat*}
+
+    Taking \(A\) to be \(C\), we get \(C(C)\!\downarrow \ \leftrightarrow \neg C(C)\!\downarrow\), which is a contradiction
+    so there must not be an algorithm \(H\).
+\end{prf}
+
+
+\newpage
+
+\section{Register Machines}
+
+\subsection{Definitions}
+
+Inofrmally, a register machine operates on \(\mathbb{N} = \{0,1,2,...\}\) stored in (idealised) registers using the following
+``elementary operations'':
+\vspace{-5px}
+\begin{itemize}[label=--, itemsep=0px]
+    \item Addition of 1 to the contents of a register 
+    \item Test whether the contents of a register is 0 
+    \item Subtract 1 frin the contents of a register if it is non-zero 
+    \item Jumps/gotos 
+    \item Conditionals
+\end{itemize}
+
+\vspace{20px}
+
+\begin{defin}[Register Machines]{}
+    A Register Machine is specified by:
+
+    \begin{itemize}
+        \item Finitely many registers \(R_0, R_{1}, \cdots, R_{n}\) (each capable of storing a natural number) 
+        \item A program consisting of a finite list of instructions of the form ``label: body'', where for
+        \(i = 0,1,2,...\) the \((i+1)^{th}\) instruction has label \(L_i\). The instruction body takes one of 
+        three forms:
+
+        \vspace{5px}
+
+        \noindent\rule{\textwidth-25pt}{1pt}
+
+        \begin{tabular}{l l}
+            \(R^+ \to L'\) & Add 1 to the contents of register \(R\) and jump to instruction labelled with \(L'\)\\[5px]
+            \(R^- \to L', L''\) & if contents of R is larger than 0, then subtract 1 from it and jump\\
+            & to \(L'\), else jump to \(L''\).\\[5px]
+            HALT & Stop executing instructions
+        \end{tabular}
+
+        \noindent\rule{\textwidth-25pt}{1pt}
+    \end{itemize}
+\end{defin}
+
+\begin{defin}[Register Machine Configuration]{}
+    A \textbf{Register Machine Configuration} is a tuple:
+    \[
+        c = (\ell, r_{0}, \cdots, r_{n})
+    \]
+
+    Where \(L_\ell \) is the current label and \(r_i\) is the current content of register \(R_i\).
+    
+    \vspace{5px}
+
+    We will write
+    ``\(R_i = x\) [in configuration c]'' to mean that \(c = (\ell, r_{0}, \cdots, r_{n})\) with \(r_i = x\).
+    
+    \vspace{5px}
+
+    An initial configuration is given by \(c_0 = (0, r_{0}, \cdots, r_{n})\).
+\end{defin}
+
+\begin{defin}[Register Machine Computation]{}
+    A \textbf{Computation} of a register machine is a (finite or infinite) sequence of configurations
+    \[
+        c_0, c_1, c_2, ...
+    \]
+
+    \(c_0\) being the initial configuration.
+
+    \vspace{5px}
+
+    Each \(c = (\ell, r_{0}, \cdots, r_{n})\) in the sequence determines the next configuration in the 
+    sequence, if any, by carrying out the program instruction labelled \(L_\ell\) with registers containing
+    \(r_0, ..., r_n\)
+\end{defin}
+
+\newpage
+
+\subsection{Graphical Representation}
+
+\begin{center}
+\begin{tabular}{| l | c |}
+    \hline
+    Program Code & Graphical Representation\\
+    \hline
+    \(R^+ \to L\) & \(\begin{tikzcd}
+        {R^+} & {[L]}
+        \arrow[from=1-1, to=1-2]
+    \end{tikzcd}\)\\
+    \hline
+    \(R^- \to L, L'\) & \(\begin{tikzcd}
+        & {[L]} \\
+        {R^-} \\
+        & {[L']}
+        \arrow[from=2-1, to=1-2]
+        \arrow[two heads, from=2-1, to=3-2]
+    \end{tikzcd}\)\\
+    \hline
+    HALT & HALT\\
+    \hline
+    \(L_0\) & \(\begin{tikzcd}
+        {\text{START}} & {[L_0]}
+        \arrow[from=1-1, to=1-2]
+    \end{tikzcd}\)\\
+    \hline
+\end{tabular}
+\end{center}
+
+\vspace{10px}
+
+Example program with \(R_0, R_1, R_2\):
+
+\vspace{20px}
+
+\begin{minipage}{0.435\textwidth}
+    \begin{center}
+    \begin{lstlisting}
+        $L_0$: $R_1^- \to L_1, L_2$
+        $L_1$: $R_0^+ \to L_0$
+        $L_2$: $R_2^- \to L_3, L_4$
+        $L_3$: $R_0^+ \to L_2$
+        $L_4$: HALT
+    \end{lstlisting}
+    \end{center}
+\end{minipage}
+\begin{minipage}{0.435\textwidth}
+    % https://q.uiver.app/#q=WzAsNixbMCwxLCJcXHRleHR7U1RBUlR9Il0sWzEsMSwiUl8xXi0iXSxbMSwwLCJSXzBeKyJdLFsyLDEsIlJfMl4tIl0sWzIsMCwiUl8wXisiXSxbMywxLCJcXHRleHR7SEFMVH0iXSxbMCwxXSxbMSwyLCIiLDIseyJjdXJ2ZSI6MX1dLFsyLDEsIiIsMix7ImN1cnZlIjoxfV0sWzEsMywiIiwyLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzMsNCwiIiwyLHsiY3VydmUiOjF9XSxbNCwzLCIiLDIseyJjdXJ2ZSI6MX1dLFszLDUsIiIsMix7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dXQ==
+\[\begin{tikzcd}
+	& {R_0^+} & {R_0^+} \\
+	{\text{START}} & {R_1^-} & {R_2^-} & {\text{HALT}}
+	\arrow[curve={height=6pt}, from=1-2, to=2-2]
+	\arrow[curve={height=6pt}, from=1-3, to=2-3]
+	\arrow[from=2-1, to=2-2]
+	\arrow[curve={height=6pt}, from=2-2, to=1-2]
+	\arrow[two heads, from=2-2, to=2-3]
+	\arrow[curve={height=6pt}, from=2-3, to=1-3]
+	\arrow[two heads, from=2-3, to=2-4]
+\end{tikzcd}\]
+\end{minipage}
+
+\subsection{Partial Functions}
+
+A register machine computation is deterministic: in any non-halting configuration, the next configuration is
+uniquely determined by the program. So the relation between initial and final register contents defined
+by a register machine program is a partial function.
+
+\begin{defin}[Partial Function]{}
+    A partial function from a set \(X\) to a set \(Y\) is specified by any subset \(f \subseteq X \times Y\) satisfying
+    \[
+        \in Y \quad (x,y) \in f \land (x, y') \in f \implies y = y'
+    \]
+
+    For all \(x \in X\) and for all \(y,y' \in Y\) 
+\end{defin}
+
+The cartesian product \(X \times Y\) is the set of all ordered pairs \(X \times Y = \{(x,y)\,|\, x \in X \land y \in Y\}\).
+
+\vspace{5px}
+
+The defintion of a partial function is to say that for all \(x \in X\) there is at most one \(y \in Y\) with \((x,y) \in f\).
+For a (total) function, in contrast, each \(x \in X\) has exactly one \(y \in Y\) with \((x,y) \in f\).
+
+
+\vspace{20px}
+
+
+Notation:
+
+\renewcommand\labelitemi{{\boldmath$\cdot$}}
+
+\begin{itemize}[itemsep=2px]
+    \item \(f(x) = y\) means \((x,y) \in f\)
+    \item \(f(x)\downarrow\) means \(\phantom{\neg} \exists y \in Y \ .\ (f(x) = y)\) (i.e. \(f(x)\) is defined)
+    \item \(f(x)\uparrow\) means \(\neg \exists y \in Y \ .\ (f(x) = y)\) (i.e. \(f(x)\) is undefined) 
+    \item \(X \rightharpoonup Y\) is the set of all partial functions from \(X\) to \(Y\)
+    \item \(X \rightarrow Y\) is the set of all (total) functions from \(X\) to \(Y\)
+\end{itemize}
+
+
+\begin{defin}[Total function]{}
+    A partial function \(f \in X \rightharpoonup Y\) is total if it satisfies
+    \[
+        \forall x \in X \quad f(x) \downarrow
+    \]
+\end{defin}
+
+
+\newpage
+
+\subsection{Computable Functions}
+
+In essence, a partial function is computable if you can design a register machine that computes the
+partial function. We thereby require that the register machine fully implements the partial function:
+if the partial function is undefined for some input \(x\), the register machine will not halt for that
+input \(x\) either.
+
+
+\begin{defin}[Computable]{thm:computability-of-functions}
+    \(f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) is (register machine) computable if there is a register machine \(M\)
+    with at least \(n+1\) registers \(R_{0}, \cdots, R_{n}\) (and maybe more) such that for all \((x_{1}, \cdots, x_{n}) \in \mathbb{N}^n\)
+    and all \(y \in \mathbb{N}\), the computation of \(M\) with \(c_0 = (0, x_{1}, \cdots, x_{n}, 0, ..., 0)\) halts with 
+    \(R_0 = y\) if and only if \(f(x_{1}, \cdots, x_{n}) = y\)
+\end{defin}
+
+\newpage
+
+\section{Coding Programs as Numbers}
+
+\subsection{Numerical Coding of Pairs}
+
+\begin{defin}[Coding of Pairs]{}
+    For \(x,y \in \mathbb{N}\), define:
+
+    
+    \begin{alignat*}{2}
+        \llangle &x, y \rrangle \ &&\triangleq  \ 2^x(2y +1)\\
+        \langle &x,y \rangle &&\triangleq \ 2^x(2y +1) - 1
+    \end{alignat*}
+   
+    \vspace{10px}
+
+\end{defin}
+
+
+
+\(\langle \, . \, ,  \, . \, \rangle\ \:\! \) provides a bijection from \(\mathbb{N} \times \mathbb{N}\) to \(\mathbb{N}\)
+
+\vspace{5px}
+
+\(\llangle \, . \, ,  \, . \, \rrangle\) provides a bijection from \(\mathbb{N} \times \mathbb{N}\) to \(\mathbb{N}_{>0}\)
+
+So we use \(\langle \, . \, ,  \, . \, \rangle\) when we want to encode every natural number as a possible pair and 
+\(\llangle \, . \, ,  \, . \, \rrangle\) when we need a special marker (that is not a pair) for ``null'' or ``end of data''.
+
+\vspace{50px}
+
+\subsection{Numerical Coding of Lists}
+
+Let \(list\mathbb{N}\) be the set of all finite lists of natural numbers. We will use ML notation for lists:
+
+\begin{itemize}
+    \item empty list: \([] \in list\mathbb{N}\) 
+    \item list-cons: \(x :: \ell \in list\mathbb{N}\) (given \(x \in \mathbb{N}\) and \(\ell \in list\mathbb{N}\))
+    \item \([x_{1}, \cdots, x_{n}] \triangleq x_1 :: (x_2 :: \cdots \ (x_n :: []))\)
+\end{itemize}
+
+
+\begin{defin}[Coding Lists]{}
+    For \(\ell \in list\mathbb{N}\) defin \(\encode{\ell }\) by induction on the length of the list \(\ell \):
+    \[
+        \encode{[]} \triangleq 0
+    \]
+
+    \[
+        \encode{x :: \ell} \triangleq \llangle x, \encode{\ell } \rrangle \triangleq \ 2^x(2\encode{\ell } + 1)
+    \]
+\end{defin}
+
+
+The binary representation of a list thus looks like:
+
+\[
+    \text{bin}(\encode{[x_{1}, \cdots, x_{n}]}) = 0 \text{b} 1 \mid \underbrace{0 \cdots 0}_{x_n} 1 
+    \underbrace{0 \cdots 0}_{x_{n-1}} 1 
+    \cdots 
+    \underbrace{0 \cdots 0}_{x_1}
+\]
+
+
+\(\ell \mapsto \encode{\ell }\) gives a bijection from \(list\mathbb{N}\) to \(\mathbb{N}\)
+
+\vspace{20px}
+
+Note:
+
+\vspace{5px}
+
+We need 0 as a marker for the empty list and therefore use \(\llangle \, . \, ,  \, . \, \rrangle\) and not \(\langle \, . \, ,  \, . \, \rangle\).
+
+\newpage
+
+\subsection{Numerical Coding of Programs}
+
+\begin{defin}[Coding of Programs]{thm:coding-programs}
+    If \(P\) is a register machine with \(n\) lines then its numerical code is represented as:
+
+    \[
+        \encode{P} \triangleq \encode{[ \encode{body_0}, ..., \encode{body_n}]}
+    \]
+
+    Where each \(\encode{body}\) is encoded by the following:
+
+    \begin{alignat*}{1}
+        \encode{R_i^+ \to L_j}\ \  &\triangleq \ \ \llangle 2i, j \rrangle\\
+        \encode{R_i^- \to L_j, L_k}\ \ &\triangleq \ \ \llangle 2i+1, \langle j,k \rangle \ \rrangle\\
+        \encode{\text{HALT}} \ \ &\triangleq \ \ 0
+    \end{alignat*}
+\end{defin}
+
+So every \(e \in \mathbb{N}\) decodes to a unique program \(\text{prog}(e)\), called the register machine
+with index \(e\).
+
+
+\newpage
+
+\section{Universal Register Machine}
+
+\subsection{High-Level Specification}
+
+The universal register machine \(U\) carries out the following computation, starting with \(R_0 = 0\), \(R_1 = e\), \(R_2 = a\) and
+all other registers zero-ed it performs:
+
+\begin{enumerate}
+    \item Decode \(e\) as a register machine program \(P\). 
+    \item Decode \(a\) as a list of register values \(a_{1}, \cdots, a_{n}\).
+    \item Carry out the computation of the register machine program \(P\) with \(R_0 = 0, R_1=a_{1}, ..., R_n = a_n\)
+\end{enumerate}
+
+\iffalse
+% https://q.uiver.app/#q=WzAsMTksWzAsMCwiXFx0ZXh0e1NUQVJUfSJdLFswLDEsIlxcdGV4dHtwdXNoIH0gMFxcXFxcXHRleHR7dG8gfSBBIl0sWzEsMSwiVCA6Oj0gUCJdLFsyLDEsIlxcdGV4dHtwb3AgfSBUXFxcXFxcdGV4dHt0byB9IE4iXSxbMiwyLCJQQ14tIl0sWzUsMSwiXFx0ZXh0e3BvcCB9IEFcXFxcXFx0ZXh0e3RvIH0gUl8wIl0sWzUsMCwiXFx0ZXh0e0hBTFR9Il0sWzUsMiwiXFx0ZXh0e3BvcCB9IE5cXFxcXFx0ZXh0e3RvIH0gQyJdLFs1LDMsIlxcdGV4dHtwb3AgfSBBXFxcXFxcdGV4dHt0byB9IFIiXSxbNCwzLCJDXi0iXSxbNCw0LCJDXi0iXSxbNSw0LCJcXHRleHR7cHVzaCB9IFJcXFxcXFx0ZXh0e3RvIH0gUyJdLFszLDMsIlJeKyJdLFszLDQsIk5eKyJdLFsyLDMsIlBDIDo6PSBOIl0sWzIsNCwiXFx0ZXh0e3BvcCB9IE5cXFxcXFx0ZXh0e3RvIH0gUEMiXSxbMSw0LCJSXi0iXSxbMSwzLCJcXHRleHR7cHVzaCB9IFJcXFxcXFx0ZXh0e3RvIH0gQSJdLFswLDMsIlxcdGV4dHtwb3AgfSBTXFxcXFxcdGV4dHt0byB9IFIiXSxbMCwxXSxbMSwyXSxbMiwzXSxbMyw0LCIiLDAseyJvZmZzZXQiOi0xLCJjdXJ2ZSI6LTF9XSxbNCwzLCIiLDAseyJvZmZzZXQiOi0xLCJjdXJ2ZSI6LTF9XSxbMyw1XSxbNSw2LCIiLDAseyJvZmZzZXQiOi0xLCJjdXJ2ZSI6LTF9XSxbNSw2LCIiLDAseyJvZmZzZXQiOjEsImN1cnZlIjoxLCJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbNCw3LCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbNyw1LCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbNyw4XSxbOCw5LCIiLDAseyJvZmZzZXQiOjEsImN1cnZlIjoxLCJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbOCw5LCIiLDAseyJvZmZzZXQiOi0xLCJjdXJ2ZSI6LTF9XSxbOSwxMF0sWzEwLDExXSxbMTEsOF0sWzksMTIsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxMCwxMywiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzEyLDE0XSxbMTUsMTYsIiIsMCx7Im9mZnNldCI6MSwiY3VydmUiOjEsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxNSwxNiwiIiwyLHsib2Zmc2V0IjotMSwiY3VydmUiOi0xfV0sWzE2LDE0LCIiLDIseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMTYsMTddLFsxNywxOCwiIiwyLHsib2Zmc2V0IjotMSwiY3VydmUiOi0xfV0sWzE4LDE3LCIiLDIseyJvZmZzZXQiOi0xLCJjdXJ2ZSI6LTF9XSxbMTgsMiwiIiwxLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzEzLDE1XV0=
+\[\begin{tikzcd}[cells={nodes={rectangle, draw}}]
+	|[draw=none]|{\text{START}} &&&&& |[draw=none]|{\text{HALT}} \\
+	\begin{array}{c} \text{push } 0\\\text{to } A \end{array} & {T ::= P} & \begin{array}{c} \text{pop } T\\\text{to } N \end{array} &&& \begin{array}{c} \text{pop } A\\\text{to } R_0 \end{array} \\
+	&& |[draw=none]|{PC^-} &&& \begin{array}{c} \text{pop } N\\\text{to } C \end{array} \\
+	\begin{array}{c} \text{pop } S\\\text{to } R \end{array} & \begin{array}{c} \text{push } R\\\text{to } A \end{array} & {PC ::= N} & |[draw=none]|{R^+} & |[draw=none]|{C^-} & \begin{array}{c} \text{pop } A\\\text{to } R \end{array} \\
+	& |[draw=none]|{R^-} & \begin{array}{c} \text{pop } N\\\text{to } PC \end{array} & |[draw=none]|{N^+} & |[draw=none]|{C^-} & \begin{array}{c} \text{push } R\\\text{to } S \end{array}
+	\arrow[from=1-1, to=2-1]
+	\arrow[from=2-1, to=2-2]
+	\arrow[from=2-2, to=2-3]
+	\arrow[from=2-3, to=2-6]
+	\arrow[shift left, curve={height=-6pt}, from=2-3, to=3-3]
+	\arrow[shift left, curve={height=-6pt}, from=2-6, to=1-6]
+	\arrow[shift right, curve={height=6pt}, two heads, from=2-6, to=1-6]
+	\arrow[shift left, curve={height=-6pt}, from=3-3, to=2-3]
+	\arrow[two heads, from=3-3, to=3-6]
+	\arrow[two heads, from=3-6, to=2-6]
+	\arrow[from=3-6, to=4-6]
+	\arrow[two heads, from=4-1, to=2-2]
+	\arrow[shift left, curve={height=-6pt}, from=4-1, to=4-2]
+	\arrow[shift left, curve={height=-6pt}, from=4-2, to=4-1]
+	\arrow[from=4-4, to=4-3]
+	\arrow[two heads, from=4-5, to=4-4]
+	\arrow[from=4-5, to=5-5]
+	\arrow[shift right, curve={height=6pt}, two heads, from=4-6, to=4-5]
+	\arrow[shift left, curve={height=-6pt}, from=4-6, to=4-5]
+	\arrow[from=5-2, to=4-2]
+	\arrow[two heads, from=5-2, to=4-3]
+	\arrow[shift right, curve={height=6pt}, two heads, from=5-3, to=5-2]
+	\arrow[shift left, curve={height=-6pt}, from=5-3, to=5-2]
+	\arrow[from=5-4, to=5-3]
+	\arrow[two heads, from=5-5, to=5-4]
+	\arrow[from=5-5, to=5-6]
+	\arrow[from=5-6, to=4-6]
+\end{tikzcd}\]
+
+\fi
+
+The structure of \(U\) is below:
+
+\vspace{20px}
+
+% https://q.uiver.app/#q=WzAsMjgsWzEsMCwiXFx0ZXh0e1NUQVJUfSJdLFsxLDEsIlxcdGV4dHtwdXNoIH0gMFxcXFxcXHRleHR7dG8gfSBBIl0sWzIsMSwiVCA6Oj0gUCJdLFszLDEsIlxcdGV4dHtwb3AgfSBUXFxcXFxcdGV4dHt0byB9IE4iXSxbMywyLCJQQ14tIl0sWzYsMSwiXFx0ZXh0e3BvcCB9IEFcXFxcXFx0ZXh0e3RvIH0gUl8wIl0sWzYsMCwiXFx0ZXh0e0hBTFR9Il0sWzYsMiwiXFx0ZXh0e3BvcCB9IE5cXFxcXFx0ZXh0e3RvIH0gQyJdLFs2LDMsIlxcdGV4dHtwb3AgfSBBXFxcXFxcdGV4dHt0byB9IFIiXSxbNSwzLCJDXi0iXSxbNSw0LCJDXi0iXSxbNiw0LCJcXHRleHR7cHVzaCB9IFJcXFxcXFx0ZXh0e3RvIH0gUyJdLFs0LDMsIlJeKyJdLFs0LDQsIk5eKyJdLFszLDMsIlBDIDo6PSBOIl0sWzMsNCwiXFx0ZXh0e3BvcCB9IE5cXFxcXFx0ZXh0e3RvIH0gUEMiXSxbMiw0LCJSXi0iXSxbMiwzLCJcXHRleHR7cHVzaCB9IFJcXFxcXFx0ZXh0e3RvIH0gQSJdLFsxLDMsIlxcdGV4dHtwb3AgfSBTXFxcXFxcdGV4dHt0byB9IFIiXSxbMCwxLCJcXHRleHR7TWFrZSBhIH0gUl8wID0gMFxcXFxcXHRleHR7b24gdGhlIHNpbXVsYXRlZH1cXFxcXFx0ZXh0e3JlZ2lzdGVycyB9IEEuIl0sWzcsMSwiXFx0ZXh0e01ha2UgIH0gUl8wID1cXFxcXFx0ZXh0e3RoZSBzaW11bGF0ZWR9XFxcXFxcdGV4dHtyZWdpc3RlciB9IFJfMCBcXHRleHR7IGluIH0gQS4iXSxbNywzLCJDID0gMmlcXCBcXGxvclxcIDJpKzFcXFxcUl9pIFxcdGV4dHsgaXMgcmVnaXN0ZXIgdGhhdH1cXFxcIFxcdGV4dHtjb2RlIGFjdHMgb24ufSJdLFs3LDQsIlxcdGV4dHtHZXQgfSBpXFx0ZXh0e3RoIHJlZ2lzdGVyIGZyb20gfSBBLlxcXFwgXFx0ZXh0e1doaWxlIHB1c2hpbmcgYWxsfVxcXFwgXFx0ZXh0e3ByZXZpb3VzIHJlZ2lzdGVycyB0byB9IFMuIl0sWzgsMywiMmlcXHBoYW50b217KzF9IFxcdGV4dHsgTWVhbnMgfSBSXitcXFxcIDJpKzFcXHRleHR7IE1lYW5zIH0gUl4tIl0sWzQsNSwiXFxsYW5nbGUgXFxyYW5nbGUgXFx0byBcXGxsYW5nbGUgXFxycmFuZ2xlIl0sWzMsNSwiTiA9IGoiXSxbMSw0LCJSX2leLVxcdG8gTF9qLCBMX2siXSxbMCwzLCJcXHRleHR7QWRkcyBiYWNrIGFsbCB0aGV9XFxcXFxcdGV4dHtyZWdpc3RlcnMgcG9wcGVkIG9mZn1cXFxcXFx0ZXh0e2Vuc3VyaW5nIH0gQSBcXHRleHR7IGhhcyB0aGUgfVxcXFxcXHRleHR7dXBkYXRlZCB9IFIuIl0sWzAsMV0sWzEsMl0sWzIsM10sWzMsNCwiIiwwLHsib2Zmc2V0IjotMSwiY3VydmUiOi0xfV0sWzQsMywiIiwwLHsib2Zmc2V0IjotMSwiY3VydmUiOi0xfV0sWzMsNSwiXFx0ZXh0e0Vycm9uZW91cyBIYWx0fSIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFs1LDYsIiIsMCx7Im9mZnNldCI6LTEsImN1cnZlIjotMX1dLFs1LDYsIiIsMCx7Im9mZnNldCI6MSwiY3VydmUiOjEsInN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFs0LDcsIlxcdGV4dHtGb3VuZCB0aGUgbGFiZWx9IiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzcsNSwiXFx0ZXh0e0hBTFR9IiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzcsOF0sWzgsOSwiIiwwLHsib2Zmc2V0IjoxLCJjdXJ2ZSI6MSwic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzgsOSwiIiwwLHsib2Zmc2V0IjotMSwiY3VydmUiOi0xfV0sWzksMTBdLFsxMCwxMV0sWzExLDhdLFs5LDEyLCIyaSIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxMCwxMywiMmkrMSIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxMiwxNF0sWzE1LDE2LCIiLDAseyJvZmZzZXQiOjEsImN1cnZlIjoxLCJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMTUsMTYsIiIsMix7Im9mZnNldCI6LTEsImN1cnZlIjotMX1dLFsxNiwxNCwiTiA9IGsiLDEseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMTYsMTddLFsxNywxOCwiIiwyLHsib2Zmc2V0IjotMSwiY3VydmUiOi0xfV0sWzE4LDE3LCIiLDIseyJvZmZzZXQiOi0xLCJjdXJ2ZSI6LTF9XSxbMTgsMiwiIiwxLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzEzLDE1XSxbMTQsMTddXQ==
+\adjustbox{scale=1,center}{
+\begin{tikzcd}[cells={nodes={rectangle, draw}}]
+	& |[draw=none]|{\text{START}} &&&&& |[draw=none]|{\text{HALT}} \\
+	& \begin{array}{c} \text{push } 0\\\text{to } A \end{array} & {T ::= P} & \begin{array}{c} \text{pop } T\\\text{to } N \end{array} &&& \begin{array}{c} \text{pop } A\\\text{to } R_0 \end{array}\\
+	&&& |[draw=none]|{PC^-} &&& \begin{array}{c} \text{pop } N\\\text{to } C \end{array} \\
+	& \begin{array}{c} \text{pop } S\\\text{to } R \end{array} & \begin{array}{c} \text{push } R\\\text{to } A \end{array} & {PC ::= N} & |[draw=none]|{R^+} & |[draw=none]|{C^-} & \begin{array}{c} \text{pop } A\\\text{to } R \end{array} &\\
+	& & |[draw=none]|{R^-} & \begin{array}{c} \text{pop } N\\\text{to } PC \end{array} & |[draw=none]|{N^+} & |[draw=none]|{C^-} & \begin{array}{c} \text{push } R\\\text{to } S \end{array} &\\
+	&&&& |[draw=none]|{\phantom{aaaaaaaa}} 
+	\arrow[from=1-2, to=2-2]
+	\arrow[from=2-2, to=2-3]
+	\arrow[from=2-3, to=2-4]
+	\arrow["{\text{Erroneous Halt}}", two heads, from=2-4, to=2-7]
+	\arrow[shift left, curve={height=-6pt}, from=2-4, to=3-4]
+	\arrow[shift left, curve={height=-6pt}, from=2-7, to=1-7]
+	\arrow[shift right, curve={height=6pt}, two heads, from=2-7, to=1-7]
+	\arrow[shift left, curve={height=-6pt}, from=3-4, to=2-4]
+	\arrow["{\text{Found the label}}", two heads, from=3-4, to=3-7]
+	\arrow["{\text{HALT}}", two heads, from=3-7, to=2-7]
+	\arrow[from=3-7, to=4-7]
+	\arrow[two heads, from=4-2, to=2-3]
+	\arrow[shift left, curve={height=-6pt}, from=4-2, to=4-3]
+	\arrow[shift left, curve={height=-6pt}, from=4-3, to=4-2]
+	\arrow[from=4-4, to=4-3]
+	\arrow[from=4-5, to=4-4]
+	\arrow["2i", two heads, from=4-6, to=4-5]
+	\arrow[from=4-6, to=5-6]
+	\arrow[shift right, curve={height=6pt}, two heads, from=4-7, to=4-6]
+	\arrow[shift left, curve={height=-6pt}, from=4-7, to=4-6]
+	\arrow["{\displaystyle PC = j}"{left}, from=5-3, to=4-3]
+	\arrow["{\displaystyle PC = k}"{description}, two heads, from=5-3, to=4-4]
+	\arrow[shift right, curve={height=6pt}, two heads, from=5-4, to=5-3]
+	\arrow[shift left, curve={height=-6pt}, from=5-4, to=5-3]
+	\arrow[from=5-5, to=5-4]
+	\arrow["{2i+1}", two heads, from=5-6, to=5-5]
+	\arrow[from=5-6, to=5-7]
+	\arrow[from=5-7, to=4-7]
+\end{tikzcd}}
+
+\vspace{20px}
+
+We first push 0 to \(A\), which adds a \(R_0\) register to \(A\) with value of 0.
+
+\vspace{5px}
+
+Then assign \(T\) to \(P\) so that we can pop off \(T\) without messing up \(P\).
+
+\vspace{5px}
+
+Then pop \(T\) to \(N\) in order to get the instruction that the \(PC\) points to.
+
+\vspace{5px}
+
+Then \(N\) is the instruction coded as described in \fullref{thm:coding-programs}
+
+\vspace{5px}
+
+Get the register that the operation acts on from \(A\), pushing all the registers we pop off before to \(S\), so we can push them
+back onto \(A\). This ensures that \(R\) is updated in \(A\).
+
+\vspace{5px}
+
+\(\quad\) If \(C\) is even (\(C = 2i\)) then we increment the simulated register and then assign \(PC\) to the value stored in \(N\)
+
+\(\quad\) still which is \(j\).
+
+\vspace{5px}
+
+\(\quad\) If \(C\) is odd (\(C = 2i+1\)) then we increment \(N\) since \(N\) now is equal to \(\langle j,k \rangle\) so we convert it to
+\(\llangle j,k \rrangle\) 
+
+\(\quad\) in order to be able to pop. Then perform the subtraction, if \(R\) is 0 then we set \(PC = k\) by setting it
+
+\(\quad\) to what is left in \(N\).
+
+\vspace{5px}
+
+Push back all the registers that we popped off looking for \(R\).
+
+\vspace{5px}
+
+Then reassign \(T ::= P\) and repeat from there.
+
+\newpage
+
+\subsection{Universal Register Machine Inner Functions}
+
+As seen above we need to have certain functions such as assigning a value in register to another register without affecting the original.
+The structure of these will be shown below.
+
+\subsubsection{Assignment}
+
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJcXHRleHR7U1RBUlR9Il0sWzEsMCwiUyA6Oj0gUiJdLFsyLDAsIlxcdGV4dHtIQUxUfSJdLFswLDFdLFsxLDJdXQ==
+\[\begin{tikzcd}[cells={nodes={rectangle}}]
+	{\text{START}} & |[draw]|{S ::= R} & {\text{HALT}}
+	\arrow[from=1-1, to=1-2]
+	\arrow[from=1-2, to=1-3]
+\end{tikzcd}\]
+
+% https://q.uiver.app/#q=WzAsOCxbMCwwLCJTVEFSVCJdLFsxLDAsIlNeLSJdLFsyLDAsIlJeLSJdLFsyLDEsIlNeKyJdLFsxLDEsIlpeKyJdLFszLDAsIlpeLSJdLFszLDEsIlJeKyJdLFs0LDAsIkhBTFQiXSxbMCwxXSxbMSwxXSxbMSwyXSxbMiwzXSxbMyw0XSxbNCwyXSxbMiw1LCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbNSw2LCIiLDAseyJjdXJ2ZSI6LTF9XSxbNiw1LCIiLDAseyJjdXJ2ZSI6LTF9XSxbNSw3LCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XV0=
+\[\begin{tikzcd}
+	\text{START} & {S^-} & {R^-} & {Z^-} & \text{HALT} \\
+	& {Z^+} & {S^+} & {R^+}
+	\arrow[from=1-1, to=1-2]
+	\arrow[from=1-2, to=1-2, loop, in=55, out=125, distance=10mm]
+	\arrow[from=1-2, to=1-3]
+	\arrow[two heads, from=1-3, to=1-4]
+	\arrow[from=1-3, to=2-3]
+	\arrow[two heads, from=1-4, to=1-5]
+	\arrow[shift right, curve={height=-5pt}, from=1-4, to=2-4]
+	\arrow[from=2-2, to=1-3]
+	\arrow[from=2-3, to=2-2]
+	\arrow[shift left, curve={height=-5pt}, from=2-4, to=1-4]
+\end{tikzcd}\]
+
+
+\textbf{Preconditions}:
+
+\(\quad\) \(R = x,\ S = y,\ Z = 0\)
+
+\vspace{5px}
+
+\textbf{Postconditions}:
+
+\(\quad\) \(R = x,\ S = x,\ Z = 0\)
+
+\vspace{20px}
+
+\subsubsection{Pushing an element to a list (Cons)}
+
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJTVEFSVCJdLFsxLDAsIlxcdGV4dHtQdXNoIH0gWFxcXFxcXHRleHR7dG8gfSBMICJdLFsyLDAsIkhBTFQiXSxbMCwxXSxbMSwyXV0=
+\[\begin{tikzcd}[cells={nodes={rectangle}}]
+	\text{START} & |[draw]|\begin{array}{c} \text{Push } X\\\text{to } L  \end{array} & \text{HALT}
+	\arrow[from=1-1, to=1-2]
+	\arrow[from=1-2, to=1-3]
+\end{tikzcd}\]
+
+\vspace{20px}
+
+% https://q.uiver.app/#q=WzAsOCxbMCwwLCJTVEFSVCJdLFsxLDAsIlpeKyJdLFsyLDAsIkxeLSJdLFsxLDEsIlpeKyJdLFs0LDAsIlheLSJdLFszLDAsIlpeLSJdLFszLDEsIkxeKyJdLFs1LDAsIkhBTFQiXSxbMCwxXSxbMSwyXSxbMiwzXSxbMywxXSxbNSw2LCIiLDAseyJjdXJ2ZSI6MX1dLFs2LDUsIiIsMCx7ImN1cnZlIjoxfV0sWzIsNSwiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzUsNCwiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzQsMiwiIiwwLHsiY3VydmUiOjN9XSxbNCw3LCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XV0=
+\[\begin{tikzcd}
+	\text{START} & {Z^+} & {L^-} & {Z^-} & {X^-} & \text{HALT} \\
+	& {Z^+} && {L^+}
+	\arrow[from=1-1, to=1-2]
+	\arrow[from=1-2, to=1-3]
+	\arrow[two heads, from=1-3, to=1-4]
+	\arrow[from=1-3, to=2-2]
+	\arrow[two heads, from=1-4, to=1-5]
+	\arrow[shift right, curve={height=5pt}, from=1-4, to=2-4]
+	\arrow[curve={height=18pt}, from=1-5, to=1-3]
+	\arrow[two heads, from=1-5, to=1-6]
+	\arrow[from=2-2, to=1-2]
+	\arrow[shift left, curve={height=5pt}, from=2-4, to=1-4]
+\end{tikzcd}\]
+
+\textbf{Preconditions}:
+
+\(\quad\) \(X = x,\ L = \ell,\ Z = 0\)
+
+\vspace{5px}
+
+\textbf{Postconditions}:
+
+\(\quad\) \(X = 0,\ L = \llangle x, \ell \rrangle = 2^x(2\ell + 1),\ Z = 0\)
+
+\vspace{20px}
+
+\subsubsection{Popping an element from a list}
+
+% https://q.uiver.app/#q=WzAsMyxbMCwwLCJTVEFSVCJdLFsxLDAsIlxcdGV4dHtQb3AgfSBMIFxcXFxcXHRleHR7dG8gfSBYIl0sWzIsMCwiSEFMVFxcXFxFWElUIl0sWzAsMV0sWzEsMiwiIiwwLHsib2Zmc2V0IjotM31dLFsxLDIsIiIsMCx7Im9mZnNldCI6Miwic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV1d
+\[\begin{tikzcd}[cells={nodes={rectangle}}]
+	\text{START} & |[draw]|\begin{array}{c} \text{Pop } L \\\text{to } X \end{array} & \begin{array}{c} \text{HALT}\\ \vspace{-8px} \\\text{EXIT} \end{array}
+	\arrow[from=1-1, to=1-2]
+	\arrow[shift left=4, from=1-2, to=1-3]
+	\arrow[shift right=3, two heads, from=1-2, to=1-3]
+\end{tikzcd}\]
+
+\vspace{20px}
+
+% https://q.uiver.app/#q=WzAsMTIsWzAsMSwiU1RBUlQiXSxbMiwxLCJMXi0iXSxbMiwwLCJFWElUIl0sWzMsMSwiTF4rIl0sWzEsMSwiWF4tIl0sWzQsMSwiTF4tIl0sWzQsMiwiWl4rIl0sWzUsMSwiWl4tIl0sWzQsMCwiWF4rIl0sWzYsMSwiWl4tIl0sWzYsMCwiSEFMVCJdLFs2LDIsIkxeKyJdLFsxLDIsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxLDNdLFs0LDRdLFswLDRdLFs0LDEsIiIsMix7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFszLDVdLFs1LDYsIiIsMCx7ImN1cnZlIjoxfV0sWzYsNSwiIiwwLHsib2Zmc2V0IjoxLCJjdXJ2ZSI6MX1dLFs1LDcsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFs3LDgsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFs4LDVdLFs3LDldLFs5LDEwLCIiLDAseyJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbOSwxMV0sWzExLDddXQ==
+\[\begin{tikzcd}
+	&& \text{EXIT} && {X^+} && \text{HALT} \\
+	\text{START} & {X^-} & {L^-} & {L^+} & {L^-} & {Z^-} & {Z^-} \\
+	&&&& {Z^+} && {L^+}
+	\arrow[from=1-5, to=2-5]
+	\arrow[from=2-1, to=2-2]
+	\arrow[from=2-2, to=2-2, loop, in=55, out=125, distance=10mm]
+	\arrow[two heads, from=2-2, to=2-3]
+	\arrow[two heads, from=2-3, to=1-3]
+	\arrow[from=2-3, to=2-4]
+	\arrow[from=2-4, to=2-5]
+	\arrow[two heads, from=2-5, to=2-6]
+	\arrow[shift right, curve={height=5pt}, from=2-5, to=3-5]
+	\arrow[two heads, from=2-6, to=1-5]
+	\arrow[from=2-6, to=2-7]
+	\arrow[two heads, from=2-7, to=1-7]
+	\arrow[from=2-7, to=3-7]
+	\arrow[shift left, curve={height=5pt}, from=3-5, to=2-5]
+	\arrow[from=3-7, to=2-6]
+\end{tikzcd}\]
+
+
+\textbf{Preconditions}:
+
+\(\quad\) \(X = n,\ L = \llangle x, \ell \rrangle,\ Z = 0\)
+
+\vspace{5px}
+
+\textbf{Postconditions}:
+
+\(\quad\) \(X = x,\ L = \ell ,\ Z = 0\)
+
+
+\newpage
+
+\section{The Halting Problem}
+
+\begin{defin}[The Halting Problem]{}
+    A register machine \(H\) decides the Halting Problem if for all \(e, a_{1}, \cdots, a_{n} \in \mathbb{N}\), starting \(H\) with:
+    
+    \[
+        R_0 = 0 \qquad R_1 = e \qquad R_{2} = \encode{[a_{1}, \dots, a_{n}]}
+    \]
+
+    And all other registers zereod the computation of \(H\) always halts with \(R_0\) containing 0 or 1; moreover \textbf{when} the
+    computation halts, \(R_0 = 1\) if and only if the register machine program with index \(e\) eventually halts when started with
+    \(R_0 = 0, \ \ R_1 = a_{1},\ \dots,\ R_n = a_n\) and all other registers zereod.
+\end{defin}
+
+\begin{theo}[]{}
+    No register machine \(H\) that decided the Halting Problem can exist.
+\end{theo}
+
+\begin{prf}[No \(H\) can exist]{}
+    Assume that there exists a register machine \(H\) that decides the Halting Problem, and we will derive a contradiction to disprove
+    this assumption.
+
+    \vspace{10px}
+
+    Define \(H'\) as \(H\) with the START\( \to \) with:
+
+    % https://q.uiver.app/#q=WzAsNCxbMCwwLCJTVEFSVCJdLFsxLDAsIlo6Oj1SXzEiXSxbMiwwLCJcXHRleHR7UHVzaCB9IFpcXFxcXFx0ZXh0e3RvIH0gUl8yIl0sWzMsMF0sWzAsMV0sWzEsMl0sWzIsM11d
+    \[\begin{tikzcd}[cells={nodes={rectangle, draw}}]
+        |[draw=none]|\text{START} & {Z::=R_1} & \begin{array}{c} \text{Push } Z\\\text{to } R_2 \end{array} & |[draw=none]|{}
+        \arrow[from=1-1, to=1-2]
+        \arrow[from=1-2, to=1-3]
+        \arrow[from=1-3, to=1-4]
+    \end{tikzcd}\]
+
+    Where \(Z\) is a register not present in \(H\)'s program.
+
+    \vspace{10px}
+
+    Define \(C\) to be \(H'\) with every HALT (and erroneous halt) replaced with:
+
+    % https://q.uiver.app/#q=WzAsNCxbMCwwXSxbMSwwLCJSXzBeLSJdLFsyLDAsIlJfMF4rIl0sWzEsMSwiSEFMVCJdLFswLDFdLFsxLDIsIiIsMCx7ImN1cnZlIjotMX1dLFsyLDEsIiIsMCx7ImN1cnZlIjotMX1dLFsxLDMsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dXQ==
+    \[\begin{tikzcd}
+        {} & {R_0^-} & {R_0^+} \\
+        & \text{HALT}
+        \arrow[from=1-1, to=1-2]
+        \arrow[curve={height=-6pt}, from=1-2, to=1-3]
+        \arrow[two heads, from=1-2, to=2-2]
+        \arrow[curve={height=-6pt}, from=1-3, to=1-2]
+    \end{tikzcd}\]
+
+    \vspace{10px}
+
+    Let \(c \in \mathbb{N}\) be the index of \(C\)'s program.
+
+    \begin{center}
+        \begin{minipage}{0.55\textwidth}
+            \(\phantom{\iff}\)\(C\)\phantom{'}\, started with \(R_1 = c\) eventually halts
+
+            \(\iff\)\(H'\) started with \(R_1 = c\) halts with \(R_0 = 0\)
+
+            \(\iff\)\(H\phantom{'}\) started with \(R_1 = c\), \(R_2 = \encode{[c]}\) halts with \(R_0 = 0\)
+
+            \(\iff\)\( \text{prog}(c)\) started with \(R_1 = c\) does not halt
+
+            \(\iff\)\(C\)\phantom{'}\, started with \(R_1 = c\) does not halt.
+        \end{minipage}
+    \end{center}
+
+    So we come to the conclusion:
+    \begin{center}
+        \(C\) started with \(R_1 = c\) eventually halts \(\iff\) \(C\) started with \(R_1 = c\) does not halt.
+    \end{center}
+
+    Which is a contradiction which means that our assumption was incorrect so there cannot exist such a machine \(H\).
+\end{prf}
+
+\newpage
+
+\subsection{Computable Functions}
+
+Recall a (partial) function is computable if it satisfies the defintion in \fullref{thm:computability-of-functions}
+
+\vspace{5px}
+
+The register machine \(M\), that computes \(f\) could also be used to compute a unary function \(n=1\), or a binary function 
+\(n=2\), etc. From now on we will concentrate on the unary case only.
+
+\vspace{20px}
+
+\subsubsection{Enumerating Computable Functions}
+
+For each \(e \in \mathbb{N}\), let \(\varphi_e \in \mathbb{N} \rightharpoonup \mathbb{N}\) be the unary partial function computed 
+by the register machine with prog(\(e\)). So for all \(x,y \in \mathbb{N}: \ \varphi_e(x) = y\) holds iff the computation
+of prog(\(e\)) started with \(R_0 = 0, R_1 = x\) and all other registers zeroed eventually halts with \(R_0 = y\).
+
+\vspace{10px}
+
+This \(e \mapsto \varphi_e\) defines an onto function from \(\mathbb{N}\) to the collection of all computable functions from
+\(\mathbb{N}\) to \(\mathbb{N}\).
+
+\vspace{50px}
+
+\subsubsection{An Uncomputable Function}
+
+Let \(f \in \mathbb{N} \rightharpoonup \mathbb{N}\) be the partial function with graph \(\{(x,0) \,|\, \varphi_x(x) \uparrow\}\). Thus:
+
+\[
+    f(x) = \begin{cases}
+        0 & \text{if } \varphi_x(x)\uparrow\\
+        \text{undefined} \quad &\text{if } \varphi_x(x)\downarrow
+    \end{cases}
+\]
+
+\(f\) is not computable, because if it were, then \(f = \varphi_e\) for some \(e \in \mathbb{N}\) and hence:
+
+\begin{itemize}
+    \item if \(\varphi_e(e)\uparrow\), then \(f(e) = 0\), by definition, so \(\varphi_e(e) = 0\), so \(\varphi_e(e)\downarrow\) 
+    \item if \(\varphi_e(e)\downarrow\), then \(f(e)\downarrow\), since \(f = \varphi_e\), so \(\varphi_e(e)\uparrow\)
+\end{itemize}
+
+Which is a contradiction for both cases and so \(f\) cannot be computable.
+
+\vspace{50px}
+
+\subsubsection{(Un)decidable Sets of Numbers}
+
+Given a subset \(S \subseteq \mathbb{N}\), its characteristic function \(\rchi_S \in \mathbb{N} \to \mathbb{N}\) is given by:
+
+\[
+    \rchi_S(x) \triangleq \begin{cases}
+        1 \quad &\text{if } x \in S\\
+        0 &\text{if } x \not\in S
+    \end{cases}
+\]
+
+\begin{defin}[Decidable Sets]{}
+    \(S \in \mathbb{N}\) is called (register machine) \textbf{decidable} if its characteristic function \(\rchi_S \in \mathbb{N} \to \mathbb{N}\) is
+    a register machine computable function. Otherwise it is called undecidable.
+\end{defin}
+
+\vspace{10px}
+
+\textbf{General Strategy}:
+
+\vspace{5px}
+
+To prove a set is undecidable try to show that the decidability of \(S\) would imply decidability of the Halting Problem which is a known
+undecidable problem and thus a contradiction of \(S\) is decidable.
+
+\newpage
+
+\section{Turing Machines}
+
+Informally, a Turing Machine is a finite state machine with a tape that is unbound "to the right". The tape is linear and divided into 
+cells, each of which contains a symbol of a finte alphabet of tape symbol, including a special \textbf{blank} symbol. Only finitely many
+cells contain non-blank symbols. A tape head can read or write the symbol in one specific cell, be moved one step to the left (unless 
+the end of the tap is reached), or move to the right.
+
+\def\blank{\textvisiblespace}
+\def\blankm{\text{\blank}}
+\def\leftend{\triangleright}
+
+\begin{defin}[Turing Machine]{}
+    A \textbf{Turing Machine} is specified by a tuple \(\left(Q, \Sigma, s, \delta\right)\) with:
+
+    \begin{itemize}
+        \item \(Q\), a finite set of machine states.
+        \item \(\Sigma\), a finite set of tape symbols (disjoint from \(Q\)) containing distinguished symbols \(\triangleright\) (left endmarker) and
+        \blank\(\) (blank).
+        \item \(s \in Q\), an initial state.
+        \item \(\delta \in (Q \times \Sigma) \to (Q \cup \{\text{acc}, \text{rej}\}) \times \Sigma \times \{L, R, S\}\), a transition function
+        satisfiying:
+
+        \(\qquad \qquad \) For all \(q \in Q\), there exists \(q' \in Q \cup \{\text{acc}, \text{rej}\}\) with \(\delta(q, \leftend) = (q', \leftend, R)\)
+
+        \(\quad\) (i.e the left endmarker is never overwritten and the machine always moves to the right when 
+        
+        \vspace{-3px}
+
+        \(\quad\ \) scanning it)
+    \end{itemize}
+\end{defin}
+
+Example:
+
+\(M = (Q, \Sigma, s, \delta)\) with states \(Q = \{s, q, q'\}\) the symbols \(\Sigma = \{\leftend, \blankm, 0, 1\}\) and the transition function:
+
+\vspace{10px}
+
+
+\begin{center}
+\begin{tabular}{c c c c c}
+    \hline
+    \(\delta\) & \(\leftend\) & \blank & 0 & 1\\
+    \hline
+    \(s\) & \((s, \leftend, R)\) & \((q, \blankm, R)\) & \(( \text{rej}, 0 , S)\) & \(( \text{rej}, 1, S)\)\\
+    \(q\) & \((\text{rej}, \leftend, R)\) & \((q', 0, L)\) & \((q, 1, R)\) & \((q, 1, R)\)\\
+    \(q'\) & \((\text{rej}, \leftend, R)\) & \(( \text{acc}, \blankm, S)\) & \(( \text{rej}, 0 , S)\) & \((q', 1, L)\)\\
+    \hline
+\end{tabular}
+\end{center}
+
+\subsection{Turing Machine Configurations}
+
+\begin{defin}[Turing Machine Configuration]{}
+    A Turing Machine Configuration is a triple \((q, w, u)\) where:
+
+    \begin{itemize}
+        \item \(q \in Q \cup \{\text{acc}, \text{rej}\}\) is the current state. 
+        \item \(w\) is a non-empty string \((w = va)\) of tape symbols under and to the left of the tape head, whose last element
+        \(a\) is the contents of the cell under the head. 
+        \item \(u\) is a (possibly empty) string of tape symbols to the right of the tape head (up to some point beyond which all symbols are blanks \blank)
+    \end{itemize}
+
+    A Turing Machine starts in the initial configuration \((s, \leftend, u)\)
+\end{defin}
+
+\newpage
+
+\subsection{Turing Machine Computation}
+
+Given a Turing Machine \(M = (Q, \Sigma, s, \delta)\) we write:
+
+\[
+    (q, w, u) \to_M (q', w', u')
+\]
+
+To mean that \(q \neq \text{acc},\text{rej}, w = va\) (for some \(v, a\)) and exactly one of the following holds for \(\delta(q, a)\):
+
+\begin{itemize}
+    \item \(\delta(q, a) = (q', a', L), \ w' = v, \ u' = a' u\) 
+    \item \(\delta(q, a) = (q', a', S), \ w' = va', \ u' = u\) 
+    \item \(\delta(q, a) = (q', a', R), \ u = a'' u'', \ w' = va' a'', \ u' = u''\) (and \(u\) is non-empty) 
+    \item \(\delta(q, a) = (q', a', R), \ u = \epsilon, w' = va' \blankm, \ u' = \epsilon\) 
+\end{itemize}
+
+\begin{defin}[Turning Machine Computation]{}
+    A \textbf{computation} of a Turing Machine \(M\) is a (finite or infinite) sequence of configurations \(c_0, c_1, c_2, ...\) where:
+
+    \begin{itemize}
+        \item \(c_0 = (s, \leftend, u)\) is an initial configuration 
+        \item \(c_i \to_M c_{i+1}\) holds for each \(i = 0, 1, ...\) 
+    \end{itemize}
+
+    The computation does not halt if the sequence is infinite. It halts if the sequence is finite and its last element is of the form
+    \( (\text{acc}, w, u) \) or \( (\text{rej}, w, u) \) for some \(w\) and \(u\).
+\end{defin}
+
+Example:
+
+\(M = (Q, \Sigma, s, \delta)\) with states \(Q = \{s, q, q'\}\) the symbols \(\Sigma = \{\leftend, \blankm, 0, 1\}\) and the transition function:
+
+\vspace{10px}
+
+
+\begin{center}
+\begin{tabular}{c c c c c}
+    \hline
+    \(\delta\) & \(\leftend\) & \blank & 0 & 1\\
+    \hline
+    \(s\) & \((s, \leftend, R)\) & \((q, \blankm, R)\) & \(( \text{rej}, 0 , S)\) & \(( \text{rej}, 1, S)\)\\
+    \(q\) & \((\text{rej}, \leftend, R)\) & \((q', 0, L)\) & \((q, 1, R)\) & \((q, 1, R)\)\\
+    \(q'\) & \((\text{rej}, \leftend, R)\) & \(( \text{acc}, \blankm, S)\) & \(( \text{rej}, 0 , S)\) & \((q', 1, L)\)\\
+    \hline
+\end{tabular}
+\end{center}
+
+We claim that the computation of \(M\) starting from configuration (\(s, \leftend, \blankm 1^n 0\)) halts in the configuration
+
+\(( \text{acc}, \leftend \blankm, 1^{n+1} 0)\).
+
+\begin{alignat*}{2}
+    (s, \leftend, \blankm 1^n 0) & \to_M \ \ && (s, \leftend \blankm, 1^n 0)\\
+    & \to_M && (q, \leftend \blankm 1, 1^{n-1} 0)\\
+    & \ \ \ \vdots\\
+    & \to_M && (q, \leftend \blankm 1^n, 0)\\
+    & \to_M && (q, \leftend \blankm 1^n 0, \epsilon)\\
+    & \to_M && (q, \leftend \blankm 1^{n+1} \blankm, \epsilon)\\
+    & \to_M && (q', \leftend \blankm 1^{n+1}, 0)\\
+    & \ \ \ \vdots\\
+    & \to_M && (q', \leftend \blankm 1^{n+1}, 1^{n+1}0)\\
+    & \to_M && ( \text{acc}, \leftend \blankm, 1^{n+1}0)
+\end{alignat*}
+
+\newpage
+
+\begin{theo}{}
+    The computation of a Turing Machine \(M\) can be implemented by a register machine.
+\end{theo}
+
+\textbf{Proof} (sketch):
+
+\begin{center}
+\begin{itemize}[leftmargin=20mm]
+    \item[\textbf{Step 1:}] Fix a numerical encoding of \(M\)'s startes, tape symbols, tape contents and configurations. 
+    \item[\textbf{Step 2:}] Implement \(M\)'s transition function using Register Machine Instructions on codes 
+    \item[ \textbf{Step 3:}] Implement a Register Machine to repeatedly carry out the \(\to_M\) operation. 
+\end{itemize}
+\end{center}
+
+
+\vspace{20px}
+
+\textbf{Step 1}. Indentify states and tape symbols with particular numbers:
+
+\vspace{-10px}
+
+\begin{alignat*}{1}
+    \text{acc} \ &= \ 0\\
+    \text{rej} \ &= \ 1\\
+    Q \ &= \ \{2, 3, ..., n\}\\
+    \blankm \ &= \ 0\\
+    \leftend \ &= \ 1\\
+    \sigma \ &= \ \{2, 3, ..., m\} \qquad \left(\sigma = \Sigma \setminus \{\blankm\,,\ \leftend\}\right)
+\end{alignat*}
+
+Encode configurations \(c = (q, w, u)\) as:
+
+\[
+    \encode{c} = \encode{[q, \encode{[a_n, \dots, a_1]}, \encode{[b_1, \dots, b_m]}]}
+\]
+
+where \(w = a_1 \cdots a_n\ \ (n > 0)\) and \(u = b_1\cdots b_m \ \ (m \geq 0)\) say.
+
+
+\vspace{20px}
+
+\textbf{Step 2}. Using the registers \(Q\) for the current state, \(A\) for the current tape symbol and \(D\) for the current
+direction of the tape head (with \(L = 0, \ R = 1\) and \(S = 2\)) one can turn the finite table of pairs specifying \(\delta\) into
+a register machine program:
+
+% https://q.uiver.app/#q=WzAsMyxbMSwwLCIoUSwgQSwgRCkgOjo9IFxcZGVsdGEoUSwgQSkiXSxbMCwwXSxbMiwwXSxbMSwwXSxbMCwyXV0=
+\[\begin{tikzcd}[cells={nodes={rectangle}}]
+	{\phantom{(Q, A, D) ::= \delta(Q, A)}} & |[draw]|{(Q, A, D) ::= \delta(Q, A)} & {\phantom{(Q, A, D) ::= \delta(Q, A)}}
+	\arrow[from=1-1, to=1-2]
+	\arrow[from=1-2, to=1-3]
+\end{tikzcd}\]
+
+\textbf{Preconditions}:
+
+\(\quad Q = q,\phantom{'} \ A = a,\phantom{'} \ D = d\)
+
+\vspace{5px}
+
+\textbf{Postconditions}:
+
+\(\quad Q = q', \ A = a', \ D = d'\qquad \qquad\) where (\(q', a', d'\)) = \(\delta(q, a)\)
+
+\vspace{20px}
+
+Something similar to:
+
+% https://q.uiver.app/#q=WzAsMTYsWzAsMCwiXFx0ZXh0e1NUQVJUfSJdLFswLDEsIlFeLSJdLFsxLDEsIlxcdGV4dHtFWElUfSJdLFswLDIsIlFeLSJdLFsxLDIsIlxcdGV4dHtFWElUfSJdLFswLDMsIlFeLSJdLFsxLDMsIkFeLSJdLFsyLDMsIlE6Oj1zIl0sWzMsMywiQSA6Oj0gXFxsZWZ0ZW5kIl0sWzQsMywiRCA6Oj1SIl0sWzUsMywiXFx0ZXh0e0hBTFR9Il0sWzYsMywiKDAsMCkgXFx0ZXh0eyBpbiB0aGUgbWF0cml4fSJdLFsxLDQsIkFeLSJdLFsyLDQsIlxcYnVsbGV0Il0sWzEsNSwiXFx2ZG90cyJdLFswLDYsIlxcdmRvdHMiXSxbMCwxXSxbMSwyLCJcXHRleHR7YWNjfSIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxLDNdLFszLDQsIlxcdGV4dHtyZWp9IiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzMsNV0sWzUsNiwiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzYsNywiIiwwLHsic3R5bGUiOnsiaGVhZCI6eyJuYW1lIjoiZXBpIn19fV0sWzcsOF0sWzgsOV0sWzksMTBdLFs2LDEyXSxbMTIsMTMsIiIsMCx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFsxMiwxNF0sWzUsMTVdXQ==
+\[\begin{tikzcd}
+	{\text{START}} \\
+	{Q^-} & {\text{EXIT}} \\
+	{Q^-} & {\text{EXIT}} \\
+	{Q^-} & {A^-} & {Q::=s} & {A ::= \leftend} & {D ::=R} & {\text{HALT}} & {(0,0) \text{ in the matrix}} \\
+	& {A^-} & {Q::=q} & {A ::= \blankm} & {D ::=R} & {\text{HALT}} & {(0,1) \text{ in the matrix}}\\
+	& \vdots \\
+	\vdots
+	\arrow[from=1-1, to=2-1]
+	\arrow["{\text{acc}}", two heads, from=2-1, to=2-2]
+	\arrow[from=2-1, to=3-1]
+	\arrow["{\text{rej}}", two heads, from=3-1, to=3-2]
+	\arrow[from=3-1, to=4-1]
+	\arrow[two heads, from=4-1, to=4-2]
+	\arrow[from=4-1, to=7-1]
+	\arrow[two heads, from=4-2, to=4-3]
+	\arrow[from=4-2, to=5-2]
+	\arrow[from=4-3, to=4-4]
+	\arrow[from=4-4, to=4-5]
+	\arrow[from=4-5, to=4-6]
+	\arrow[two heads, from=5-2, to=5-3]
+	\arrow[from=5-2, to=6-2]
+    \arrow[two heads, from=4-2, to=4-3]
+	\arrow[from=5-3, to=5-4]
+	\arrow[from=5-4, to=5-5]
+	\arrow[from=5-5, to=5-6]
+\end{tikzcd}\]
+
+\newpage
+
+\textbf{Step 3.} The register machine shown below will carry ot \(M\)'s computation. It uses the registers \(C\) for the code
+of the current configuration, \(W\) for the code of the tape symbols at and to the left of the tape head (reading right-to-left)
+and \(U\) for the code of tape symbols right of the tape head (reading left-to-right). Starting with \(C\) containing the code
+of an initial configuration (and all other registers zeroed), the register machine program halts if and only if \(M\) halts; and in
+that case \(C\) holds the code of the final configuration.
+
+% https://q.uiver.app/#q=WzAsMTMsWzAsMCwiXFx0ZXh0e1NUQVJUfSJdLFswLDEsIlxcZW5jb2Rle1tRLCBXLCBVXX0gOjo9IEMiXSxbMiwxLCJRIDwgMj8iXSxbMiwwLCJcXHRleHR7SEFMVH0iXSxbMywxLCJcXHRleHR7cG9wIH0gV1xcXFxcXHRleHR7dG8gfSBBIl0sWzQsMSwiKFEsQSxEKSA6Oj0gXFxkZWx0YShRLCBBKSJdLFs0LDIsIkReLSJdLFs0LDMsIlxcdGV4dHtwdXNoIH0gQVxcXFxcXHRleHR7dG8gfSBXIl0sWzIsMiwiXFx0ZXh0e3B1c2ggfSBBXFxcXFxcdGV4dHt0byB9IFUiXSxbMiwzLCJEXi0iXSxbMSwzLCJcXHRleHR7cG9wIH0gVVxcXFxcXHRleHR7dG8gfSBCIl0sWzAsMywiXFx0ZXh0e3BvcCB9IEJcXFxcXFx0ZXh0e3RvIH0gVyJdLFswLDIsIkM6Oj1cXGVuY29kZXtbUSwgVywgVV19Il0sWzAsMV0sWzEsMl0sWzIsMywiXFx0ZXh0e1llc30iLDFdLFsyLDQsIlxcdGV4dHtOb30iLDFdLFs0LDMsIiIsMSx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFs0LDVdLFs1LDZdLFs2LDddLFs2LDgsIiIsMSx7InN0eWxlIjp7ImhlYWQiOnsibmFtZSI6ImVwaSJ9fX1dLFs3LDldLFs5LDEwXSxbMTAsMTEsIiIsMSx7ImN1cnZlIjoxLCJzdHlsZSI6eyJoZWFkIjp7Im5hbWUiOiJlcGkifX19XSxbMTAsMTEsIiIsMSx7ImN1cnZlIjotMX1dLFsxMSwxMl0sWzEyLDJdLFs4LDEyXV0=
+\[\begin{tikzcd}[cells={nodes={rectangle, draw}}]
+	|[draw = none]|{\text{START}} && |[draw = none]|{\text{HALT}} \\
+	{\encode{[Q, W, U]} ::= C} && {Q < 2?} & \begin{array}{c} \text{pop } W\\\text{to } A \end{array} & {(Q,A,D) ::= \delta(Q, A)} \\
+	{C::=\encode{[Q, W, U]}} && \begin{array}{c} \text{push } A\\\text{to } U \end{array} && |[draw = none]|{D^-} \\
+    &\\
+	\begin{array}{c} \text{pop } B\\\text{to } W \end{array} & \begin{array}{c} \text{pop } U\\\text{to } B \end{array} & |[draw = none]|{D^-} && \begin{array}{c} \text{push } A\\\text{to } W \end{array}
+	\arrow[from=1-1, to=2-1]
+	\arrow[from=2-1, to=2-3]
+	\arrow["{\text{Yes}}"{description}, from=2-3, to=1-3]
+	\arrow["{\text{No}}"{description}, from=2-3, to=2-4]
+	\arrow[two heads, from=2-4, to=1-3]
+	\arrow[from=2-4, to=2-5]
+	\arrow[from=2-5, to=3-5]
+	\arrow[from=3-1, to=2-3]
+	\arrow[from=3-3, to=3-1]
+	\arrow[two heads, from=3-5, to=3-3]
+	\arrow[from=3-5, to=5-5]
+	\arrow[from=5-1, to=3-1]
+	\arrow[curve={height=6pt}, two heads, from=5-2, to=5-1]
+	\arrow[curve={height=-6pt}, from=5-2, to=5-1]
+	\arrow[two heads, from=5-3, to=5-2]
+	\arrow[from=5-5, to=5-3]
+    \arrow[from=5-3, to=3-1]
+\end{tikzcd}\]
+
+\vspace{30px}
+
+\subsection{Turing Computability}
+
+\begin{defin}[Turing Computable Functions]{}
+    A function \(f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) is \textbf{Turing Computable} if and only if there is a Turing Machine \(M\)
+    with the following property:
+
+    \vspace{10px}
+
+    \hspace{20px}\begin{minipage}{0.9\textwidth}
+        Starting \(M\) from its initial state with the tape head on the left endmarker of a tape coding
+        \([0, x_{1}, \dots, x_{n}]\), \(M\) halts if and only if \(f(x_{1}, \dots, x_{n})\downarrow\), and in that
+        case the final tape codes a list (of length \(\ge 1\)) whose first element is \(y\) where, \(f(x_{1}, \dots, x_{n}) = y\)
+    \end{minipage}
+\end{defin}
+
+\vspace{10px}
+
+And to code a list of numbers onto a tape we can do the following:
+
+\vspace{10px}
+
+\begin{defin}[Coding Lists in Turing Machines]{}
+    A tape codes a list of numbers if precisely two cells contains 0 and the only cells containing 1 occur between these.
+
+    \vspace{10px}
+
+    A tape looking like:
+    \[
+        \leftend \blankm \cdots\blankm0 \underbrace{1 \cdots 1}_{n_1}\blankm\underbrace{1 \cdots 1}_{n_2} \blankm \cdots\blankm\underbrace{1 \cdots 1}_{n_k} 0\blankm \cdots
+    \]
+
+    corresponds to the list \([n_1, n_2, \dots, n_k]\).
+\end{defin}
+
+\begin{theo}[Turing Computability]{}
+    A partial function is Turing Computable if and only if it is register machine computable.
+
+    \vspace{10px}
+
+    We have shown that any Turing Machine can be implemented by a register machine. So we have proven the right direction. To 
+    prove the left direction we would show that any register machine can be implemented by a Turing machine, to do this we
+    would have to show that each action of the register machine can be implemented on a Turing machine, which is tedious so is omitted.
+\end{theo}
+
+\newpage
+
+\section{Notions of Computability}
+
+\begin{theo}{Church-Turing Thesis}
+    Every algorithm (in an intuitive sense) can be realised as a Turing machine.
+\end{theo}
+
+\subsection{Computable Partial Functions}
+
+Our aim now is to arrive at a more abstract, machine-independent description of the collection of computable partial functions, as 
+opposed to Turing machines or register machines.
+
+\vspace{20px}
+
+We start with a foundation of three basic functions, which are all register machine computable.
+
+\vspace{10px}
+
+\textbf{Projection} \( \text{proj}_i^n \in \mathbb{N}^n \to \mathbb{N}\):
+\[
+    \text{proj}_i^n(x_{1}, \dots, x_{n}) \triangleq x_i
+\]
+
+\vspace{10px}
+
+\textbf{Constant} (with value 0) \( \text{zero}^n \in \mathbb{N}^n \to \mathbb{N}\):
+\[
+    \text{zero}^n(x_{1}, \dots, x_{n}) \triangleq 0
+\]
+
+\vspace{10px}
+
+\textbf{Successor} succ \( \in \mathbb{N} \to \mathbb{N}\):
+\[
+    \text{succ}(x) \triangleq x + 1
+\]
+
+\vspace{20px}
+
+\textbf{Composition}. The composition of \(f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) with \(g_{1}, \dots, g_{n} \in \mathbb{N}^m \to \mathbb{N}\)
+is the partial function 
+
+\(f \circ [g_{1}, \dots, g_{n}] \in \mathbb{N}^m \to \mathbb{N}\) satisfiying for all \(x_{1}, \dots, x_{n} \in \mathbb{N}\):
+
+\[
+    f \circ [g_{1}, \dots, g_{n}](x_{1}, \dots, x_{m}) \equiv f\big(g_{1}(x_{1}, \dots, x_{m}),\ \dots,\ g_{n}(x_{1}, \dots, x_{m})\big)
+\]
+
+Where \(\equiv\) is the `Kleene equivalence' which means that either both the LHS and RHS are undefined, or both are defined and
+equal.
+
+\vspace{10px}
+
+So \(f \circ [g_{1}, \dots, g_{n}](x_{1}, \dots, x_{m}) = z\) if and only if there exists \(y_{1}, \dots, y_{n}\) with
+\(g_i(x_{1}, \dots, x_{m}) = y_i\) for all \(i = 1 \dots n\) and \(f(y_{1}, \dots, y_{n}) = z\) 
+
+\vspace{20px}
+
+\begin{theo}{}
+    \(f \circ [g_{1}, \dots, g_{n}]\) is computable if \(f\) and \(g_{1}, \dots, g_{n}\) are.
+\end{theo}
+
+\newpage
+
+\section{Partial Recursive Functions}
+
+\subsection{Examples of Partial Recursive Functions}
+
+\begin{itemize}
+    \item \(f_1(x)\) is the sum of naturals upto and including \(x\):
+    \[
+        \begin{cases}
+            f_1(0) &\equiv 0\\
+            f_1(x+1) &\equiv f_1(x) + (x+1)
+        \end{cases}
+    \]
+    \item \(f_2(x)\) is the \(x^{ \text{th}}\) Fibonnaci number:
+    \[
+        \begin{cases}
+            f_2(0) &\equiv 0\\
+            f_2(1) &\equiv 1\\
+            f_1(x+2) &\equiv f_2(x) + f_2(x+1) 
+        \end{cases}
+    \]
+    \item \(f_3(x)\) is undefined unless \(x=0\):
+    \[
+        \begin{cases}
+            f_3(0) &\equiv 10\\
+            f_3(x+1) &\equiv f_3(x+2) + 1
+        \end{cases}
+    \]
+\end{itemize}
+
+\vspace{20px}
+
+\subsection{Primitive Recursion}
+
+\begin{theo}{}
+    Given \(f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) and \(g \in \mathbb{N}^{n+2} \rightharpoonup \mathbb{N}\), there is a
+    unique \(h \in \mathbb{N}^{n+1} \rightharpoonup \mathbb{N}\) satisfiying:
+
+    \[
+        \begin{cases}
+            h(\vec{x}, 0) &\equiv f(\vec{x})\\
+            h(\vec{x}, x+1) & \equiv g(\vec{x},\ x,\ h(\vec{x}, x))
+        \end{cases}
+    \]
+
+    For all \(\vec{x} \in \mathbb{N}^n\) and \(x \in \mathbb{N}\).
+
+    \[
+        h \equiv \rho^n(f, g)
+    \]
+
+    We call h the partial function defined by primitive recursion from \(f\) and \(g\). Recursion is done over the parameter \(x\), we
+    also allow for more parameters to be passed, namely \(\vec{x}\). If additional parameters are not needed then \(f = n\) where it acts
+    just like a specific natural number.
+\end{theo}
+
+\textbf{Examples}:
+
+\vspace{10px}
+
+\textbf{Addition}: \(add \in \mathbb{N}^2 \to  \mathbb{N}\) satisfies:
+
+\[
+    \begin{cases}
+        \ add(x_1, 0) &\equiv x_1\\
+        \ add(x_1, x+1) &\equiv add(x_1, x) + 1
+    \end{cases}
+\]
+
+So, \(add = \rho^1 (f, g)\) where \(f(x_1) \triangleq x_1\) and \(g(x_1, x, h) \triangleq h + 1\).
+
+\vspace{10px}
+
+We can represent \(add\) in terms of the three basic functions we previously defined:
+\[
+    add = \rho^1( \text{proj}_1^1, \text{succ} \circ \text{proj}_3^3)
+\]
+
+\textbf{Multiplication}: \(mult \in \mathbb{N}^2 \to  \mathbb{N}\) satisfies:
+
+\[
+    \begin{cases}
+        \ mult(x_1, 0) &\equiv 0\\
+        \ mult(x_1, x+1) &\equiv mult(x_1, x) + x_1
+    \end{cases}
+\]
+
+\[
+    mult = \rho^1( \text{proj}_1^1, add \circ [\text{proj}_3^3, \text{proj}_1^3])
+\]
+
+Since \(add\) can be made up from basic functions so can \(mult\)
+
+\newpage
+
+\begin{defin}[Primitive Recursive]{}
+    A (partial) function \(f\) is primitive recursive (\(f \in \) PRIM) if it can be built up in finitely many steps
+    from the basic functions by use of the operations of composition and primitive recursion.
+
+    \vspace{10px}
+
+    In other words, the set PRIM of primitive recursive functions is the smallest set (with respect to subset inclusion) of
+    partial functions containing the basic functions and closed under the operations of composition and primitive recursion.
+
+    \vspace{10px}
+
+    All primitive recursive functions are total functions, as:
+    \begin{itemize}
+        \item all the basic functions are total 
+        \item if \(f, g_{1}, \dots, g_{n}\) are total, then so is \(f \circ [g_{1}, \dots, g_{n}]\) 
+        \item if \(f\) and \(g\) are total, then so is \(\rho^n(f, g)\)
+    \end{itemize}
+
+    \vspace{5px}
+
+    All primitive recursive functions are register machine computable.
+\end{defin}
+
+
+\vspace{30px}
+
+\subsection{Minimisation}
+
+\begin{defin}[Minimisation]{}
+    Let \(f \in \mathbb{N}^{n+1} \rightharpoonup \mathbb{N}\) be a partial function. We then define the minimisation
+    \(\mu^n f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) as the least \(x\) such that \(f(\vec{x}, x) = 0\) and 
+    for each \(i < x, \ f(\vec{x}, i)\) is defined and larger than zero. We write \(\mu^n f(\vec{x})\) for this
+    value of \(x\).
+
+    \vspace{10px}
+
+    If no \(x\) exists (either because \(f(\vec{x}, x)\) is never zero or because \(f(\vec{x}, x')\) is undefined for an \(x'\) smaller
+    than \(x\)), then \(\mu^n f(\vec{x})\) is undefined.
+\end{defin}
+
+\vspace{10px}
+
+\subsection{Partial Recursive Functions}
+
+\begin{defin}[Partial Recursive]{}
+    A partial function \(f\) is partial recursive (\(f \in \) PR) if it can be built up in finitely many steps from the basic
+    functions by use of the operations of composition, primitive recursion, and minimisation.
+
+    \vspace{10px}
+
+    In other words, the set PR of partial recursive functions is the smallest set (with respect to subset inclusion) of
+    partial functions containing the basic functions and closed under the operations of composition, primitive recursion, and
+    minimisation.
+
+    \vspace{10px}
+
+    All partial recursive function are register machine computable.
+\end{defin}
+
+\begin{theo}[]{}
+    Not only is every \(f \in \) PR computable, but conversly, every computable partial function is partial recursive.
+\end{theo}
+
+\newpage
+
+\subsection{Ackermann's Function}
+
+Ackermann's Function is a famous example of a (total) recursive function that is not primitive recursive.
+
+\vspace{10px}
+
+To express Ackermann's function we will use a family of functions, rather than doing addition, multiplication with multiple arguments
+we will fix one to 2 for this explanation.
+
+\begin{alignat*}{2}
+    f_0(x) &= x+2 \qquad \ \ \ \ \ \ &&\text{addition of \(x\) with the fixed value 2}\\
+    f_1(x) &= 2 \cdot x &&\text{multiplication}\\
+    f_2(x) &= 2^x && \text{exponentiation} 
+\end{alignat*}
+
+To show that exponentiation is repeated multiplication and multiplication is repeated addition we can use recursion.
+
+\begin{alignat*}{3}
+    f_1(x+1) &= 2 (x+1) &&= 2 \cdot x + 2 &&= f_0(f_1(x))\\
+    f_2(x+1) &= \ \ \ 2^{x+1} &&= \ 2 \cdot (2^x) &&= f_2(f_2(x))
+\end{alignat*}
+
+We can then define further functions, \(f_{n+1}(x+1) = f_n(f_{n+1}(x))\). This idea is the core around which Ackermann's function 
+is built. Instead of \(f_n(x)\), Ackermann's function is usually written in the form \(f(n,x)\). And if we use the increment by
+one as our base case, we get the following:
+
+\[
+    f(0,x) = x+1 \qquad \qquad \qquad f(n+1, x+1) = f(n, f(n+1, x))
+\]
+
+We just need to have a proper definition of \(f_n(0) = f(n,0)\) for all \(n > 0\).
+
+\vspace{10px}
+
+\begin{defin}[Ackermann's Function]{}
+    There is a (unique) function \(ack \in \mathbb{N} \to \mathbb{N}\) satisfiying:
+    \begin{alignat*}{1}
+        ack(0, x_2)\ \ &=\ \ x_2 + 1\\
+        ack(x_1 + 1, 0)\ \ &=\ \ ack(x_1, 1)\\
+        ack(x_+1, x_2+1)\ \ &=\ \ ack(x_1, \ ack(x_1+1, x_2))
+    \end{alignat*}
+\end{defin}
+
+The function \(ack\) is computable and hence recursive. However, \(ack\) grows facter than any primitive recursive function \(f \in \mathbb{N}^2 \to  \mathbb{N}\):
+
+\[
+    \exists N_f . \forall x_1, x_2 > N_f . f(x_1, x_2) < ack(x_1, x_2)
+\]
+
+Which means that \(ack\) is not primitive recursive, although it is total recursive.
+
+\newpage
+
+\section{Lambda-Calculus}
+
+\subsection{\(\lambda\)-Terms}
+
+\(\lambda\)-terms are built up from a given, countable collections of variables \(x,y,z, \dots\) by two operations for forming \(\lambda\)-terms:
+
+\begin{itemize}
+    \item \(\lambda\)\textbf{-abstraction}: \((\lambda x . M)\) (where \(x\) is a variable and \(M\) is a \(\lambda\)-term) 
+    \item \textbf{Application}: \(\ \ \, (M M')\) (where \(M\) and \(M'\) are both \(\lambda\)-terms)
+\end{itemize}
+
+Instead of writing \(\lambda x . \lambda y . M\) we shorten this to \(\lambda x\, y . M\). Another notation is let, ``let \(x = N\) in \(M\)'',
+
+which stands for \((\lambda x . M)\ N\).
+
+\[
+    \underbrace{\big(\,\lambda y. \, \underbrace{(x \, y)}_{\text{body}}\,\big)}_{\text{abstraction}} \ x' \ \ \longrightarrow \ \ x \ x'
+\]
+
+\textbf{Identity}:
+
+The \(\lambda\)-term \(\lambda x.x\) stands for the identity and is usually abbreviated to \(I\). For any \(\lambda\)-term \(t\), \[
+    I\ t \equiv (\lambda x.x) \ t \longrightarrow t
+\]
+
+\vspace{5px}
+
+\textbf{Pairs}:
+
+If we wrote pairs \((x,y)\) as \((x y)\) in lambda calculus then that signifies application, so we need an alternative. We encode the pair
+as \(\lambda f. f\ x\, y\). 
+
+\vspace{5px}
+
+To retrieve first or second item we can use the following terms, \(\lambda x\, y. x\) or \(\lambda x\, y. y\).
+
+\[
+    (\lambda f. f \  A\, B)(\lambda x \, y. \ x) \longrightarrow A
+\]
+
+\vspace{10px}
+
+\subsubsection{Bound and Free Variable}
+
+In \(\lambda x. M\) we call the \(x\) the bound variable and \(M\) the body of the \(\lambda\) abstraction. An occurrence of \(x\) in a 
+\(\lambda\) term \(M\) is called:
+
+\begin{itemize}
+    \item \textbf{Binding} if it is between \(\lambda\) and the dot, e.g. \((\lambda \text{\textbf{x}}. y \, x)x\)
+    \item \textbf{Bound} if it is in the body of a binding occurence of \(x\), e.g. \((\lambda x. y \, \text{\textbf{x}})x\) 
+    \item \textbf{Free} if it is nether binding nor bound, e.g. \((\lambda x. y \, x)\text{\textbf{x}}\)
+\end{itemize}
+
+For a \(\lambda\)-term \(M\) we can define the sets of free and bound variables \(FV(M)\) and \(BV(M)\), respectively:
+
+\begin{alignat*}{3}
+    FV(x)\ \ &= \ \ \{x\}\\
+    FV(\lambda x. M) \ \ &= \ \ FV(M) \setminus \{x\}\\
+    FV(M \ N)\ \ &=\ \ FV(M) \cup FV(N)\\
+    BV(x)\ \ &=\ \ \emptyset\\
+    BV(\lambda x. M)\ \ &=\ \ BV(M) \cup \{x\}\\
+    BV(M \ N)\ \ &=\ \ BV(M) \cup BV(N)
+\end{alignat*}
+
+We write \(x\, \#\, M\) to mean that \(x\) does not occur in the term \(M\).
+
+\vspace{5px}
+
+If \(FV(M) = \emptyset\), \(M\) is called a \textbf{closed term} or \textbf{combinator}. For instance, the identity is a \textbf{combinator}, as is
+\(K = \lambda x\, y. x\)
+
+\newpage
+
+\subsection{\(\alpha\)-Equivalence}
+
+Structurally equivalent \(\lambda\)-terms that only differ in the names of bound variables are called \(\alpha\)-equivalent. Changing the name
+of a bound variable is also known as \(\alpha\)-conversion and is the simplest form of substitution.
+
+\vspace{5px}
+
+\(\alpha\)-equivalence \(M =_\alpha M'\) is the binary relation inductively generated by the rules:
+
+\vspace{10px}
+
+\[
+\begin{prooftree}
+    \hypo{\phantom{M[z/x]}}
+    \infer1{x =_\alpha x}
+\end{prooftree}
+\qquad\qquad
+\begin{prooftree}
+    \hypo{z \# (M \ N)}
+    \hypo{M[z/x] =_\alpha N[z / y]}
+    \infer2{\lambda x.M =_\alpha \lambda y.N}
+\end{prooftree}
+\qquad\qquad
+\begin{prooftree}
+    \hypo{M =_\alpha M'}
+    \hypo{N =_\alpha N'}
+    \infer2{M \ N =_\alpha M'\ N'}
+\end{prooftree}
+\]
+
+\vspace{10px}
+
+\textbf{Example}:
+
+Note that \(x\) is bound twice in the example, thus introducing completely different variables with the same name. When doing \(\alpha\)-conversion,
+take care not to replace variables that only look alike.
+
+\vspace{5px}
+
+\[
+    \lambda x \, y. x \ (\lambda x. x \ y)  =_\alpha \lambda z \, y.z\ (\lambda x.x \ y) =_\alpha \lambda z \, t.z \ (\lambda x.x \ t)
+\]
+
+\subsection{\(\beta\)-Reduction}
+
+\subsubsection{Substitution}
+
+If we replace variable not only by other variables, but with any \(\lambda\)-term \(M\), we arrive at the general concept of substitution, 
+as determined by the following rules:
+
+\begin{alignat*}{1}
+    x[M / x] \ \ &= \ \ M\\
+    y[M / x] \ \ &= \ \ y \qquad \text{if } y \ne x\\
+    (\lambda y.N)[M / x] \ \ &= \ \ \lambda y. (N[M / x])\\
+    (N_1 \ N_{2})[M / x] \ \ &= \ \ N_1[M / x] \ N_{2}[M / x] 
+\end{alignat*}
+
+The side-condition \(y \# (M \ x)\) ( \(y\) doesn not occur in \(M\) and \( y \ne x\)) makes substitution `Capture-Avoiding', i.e. making sure
+that two distinct variables do not suddenly coincide and become one.
+
+\subsubsection{Reduction}
+
+Just as you can apply a function to an argument, you can apply a \(\lambda\)-abstraction to another \(\lambda\)-term. The notation \((\lambda x. M)\ a\) is
+thus intended to mean that all variables \(x\) in the term \(M\) shall be replaced by \(a\), i.e. \((\lambda x. M) \ a = M[a / x]\). This substitution
+is at the heart of \(\beta\)-reduction.
+
+\vspace{5px}
+
+The natural notation of computation for \(\lambda\)-terms is thus given by stepping from a \(\beta\)-redex \((\lambda x. M) \ N\) to
+the corresponding \(\beta\)-reduct \(M[N / x]\) (Where `redex' is short for `reducible expression'). This is sometimes called 
+contraction of \((\lambda x. M) \ N\) to \(M[N / x]\).
+
+\vspace{20px}
+
+\textbf{One-step} \(\beta\)\textbf{-reduction}, \(M \to M'\).
+
+The one-step \(\beta\)-reduction performs a single contraction, i.e. it replaces one \(\lambda\)-subterm with the pattern \((\lambda x. \, M) \ N\)
+by \(M[N / x]\), leading to the following rules:
+
+\[
+    \begin{prooftree}
+        \hypo{\phantom{M \to M'}}
+        \infer1{(\lambda x . \, M) \ N \to M[N / x]}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M \to M'}
+        \infer1{\lambda x . \, M \to \lambda x .\, M'}
+    \end{prooftree}
+\]
+
+\vspace{5px}
+
+\[
+    \begin{prooftree}
+        \hypo{M \to M'}
+        \infer1{M \ N \to M'\ N}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M \to M'}
+        \infer1{N \ M \to N\ M'}
+    \end{prooftree}
+\]
+
+\vspace{5px}
+
+\[
+    \begin{prooftree}
+        \hypo{N =_\alpha M}
+        \hypo{M \to M'}
+        \hypo{M' =_\alpha N'}
+        \infer3{N \to N'}
+    \end{prooftree}
+\]
+
+\textbf{Many-step} \(\beta\)\textbf{-reduction}, \(M \twoheadrightarrow M'\).
+
+It is often convenient to combine several single step of \(\beta\)-reduction and perform them as `one' step. This leads to the many-step
+or `big-step' reduction:
+
+\[
+    \begin{prooftree}
+        \hypo{M =_\alpha M'}
+        \infer1{M \twoheadrightarrow M'}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M \to M'}
+        \infer1{M \twoheadrightarrow M'}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M \to M'}
+        \hypo{M' \to M''}
+        \infer2{M \twoheadrightarrow M''}
+    \end{prooftree}
+\]
+
+\newpage
+
+\subsubsection{\(\beta\)-Conversion \(M =_\beta N\)}
+
+Informally \(M =_\beta N\) holds if \(N\) can be obtained from \(M\) by performing 0 or more steps of \(\alpha\)-equivalence, \(\beta\)-reduction,
+or \(\beta\)-expansion (the inverse of \(\beta\)-reduction).
+
+\vspace{10px}
+
+\(\beta\)-Conversion \(M =_\beta N\) is the binary relation inductively generated by the rules:
+
+\[
+    \begin{prooftree}
+        \hypo{M =_\alpha M'}
+        \infer1{M =_\beta M'}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M \to  M'}
+        \infer1{M =_\beta M'}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M =_\beta M'}
+        \infer1{M' =_\beta M}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M =_\beta M'}
+        \hypo{M =_\beta M''}
+        \infer2{M =_\beta M'}
+    \end{prooftree}
+\]
+
+\[
+    \begin{prooftree}
+        \hypo{M =_\beta M'}
+        \infer1{\lambda x. \, M =_\beta \lambda x. M'}
+    \end{prooftree}
+    \qquad
+    \begin{prooftree}
+        \hypo{M =_\beta M'}
+        \hypo{N =_\beta N'}
+        \infer2{M \ N =_\beta M' \ N'}
+    \end{prooftree}
+\]
+
+\begin{theo}[Church-Rosser Theorem]{}
+    \(\twoheadrightarrow\) is confluent, that is, if \(M \twoheadrightarrow M_1\), and \(M \twoheadrightarrow M_2\), then there exists an \(M'\)
+    such that \(M_1 \twoheadrightarrow M'\) and \(M_{2} \twoheadrightarrow M'\).
+\end{theo}
+
+\begin{theo}[Corollary]{}
+    \(M_{1} =_\beta M_2\) if and only if there is an \(M\) such that \(M_{1} \twoheadrightarrow M \twoheadleftarrow M_{2}\). In other words;
+    \(M_1\) and \(M_2\) are \(\beta\)-equivalent if both can be reduced to a common term \(M'\).
+\end{theo}
+
+
+\textbf{Proof}:
+
+\vspace{5px}
+
+\hspace{20px}\begin{minipage}{0.9\textwidth}
+    \begin{siderules}
+        \(=_\beta\) satisfies the rules generating \(\twoheadrightarrow\); 
+        
+        \vspace{5px}
+    
+        So \(M \twoheadrightarrow M'\) implies \(M =_\beta M'\). Thus if
+        \(M_{1} \twoheadrightarrow M\) and \(M_{2} \twoheadrightarrow M\), then \(M_{1} =_\beta M =_\beta M_{2}\) and so \(M_1 =_\beta M_2\)
+
+        \vspace{10px}
+
+        Conversely, the relation \(\{(M_1, M_2) \,|\, \exists.\, M_1 \twoheadrightarrow M \land M_2 \twoheadrightarrow M\}\) satisfies the
+        rules generating \(=_\beta\):
+
+        \vspace{5px}
+
+        The only difficult case is closure of the relation under transitivity and for this we use the Church-Rosser theorem. Hence 
+        \(M_1 =_\beta M_2\) implies that there is an \(M\) such that \(M_1 \twoheadrightarrow M\) and \(M_2 \twoheadrightarrow M\).
+        \begin{alignat*}{1}
+            \tag*{\(\square\)}
+        \end{alignat*}
+    \end{siderules}
+\end{minipage}
+
+\subsection{\(\beta\)-Normal Forms}
+
+\begin{defin}[\(\beta\)-Normal Form]{}
+    A \(\lambda\)-term is in \(\beta\)-normal form (\(\beta\)-nf) if it contains no \(\beta\)-redexes. \(M\) has \(\beta\)-normal form \(N\) if
+    \(M =_\beta N\) with \(N\) a \(\beta\)-normal form.
+\end{defin}
+
+Note that if \(N\) is a \(\beta\)-normal form and \(N \twoheadrightarrow  N'\), then it must be that \(N =_\alpha N'\). Hence, if 
+\(N_1 =_\beta N_2\) with \(N_1\) and \(N_2\) both \(\beta\)-normal forms, then \(N_{1} =_\alpha N_2\). Because if \(N_{1} =_\beta N_2\), then
+by Church-Rosser \(N_1 \twoheadrightarrow M' \twoheadleftarrow N_2\) for some \(M'\), so \(N_{1} =_\alpha M' =_\alpha N_{2}\).
+
+\vspace{5px}
+
+So, the \(\beta\)-normal form of \(M\) is unique up to \(\alpha\)-equivalence if it exists.
+
+\vspace{20px}
+
+\textbf{Non-termination}:
+
+Some \(\lambda\)-terms have no \(\beta\)-normal form. Every attempt to reduce such a \(\lambda\)-term introduces another \(\beta\)-redex,
+leading to an infinite sequence. With \(\lambda\)-terms as representations of algorithms, this means that the algorithm never terminates.
+
+\vspace{5px}
+
+For example the \(\Omega\)-combinator \(\big(\Omega = (\lambda x. \, x \ x) (\lambda x. \, x \ x)\big)\) has no \(\beta\)-normal form, as:
+
+\begin{alignat*}{1}
+    &\Omega \to (x \ x) [(\lambda x. \, x \ x) / x] = \Omega \qquad \qquad (\Omega \to \Omega)\\
+    &\Omega \twoheadrightarrow M \text{ thus } \implies \Omega =_\alpha M
+\end{alignat*}
+
+\newpage
+
+The picture is not always that clear: in fact, a term can possess both a \(\beta\)-normal form and infinite
+chains of reductions from it. In other words: depending on which \(\beta\)-redex you reduce first, you
+either arrive at a \(\beta\)-normal form, or you are caught in an `infinite loop'.
+
+\vspace{10px}
+
+To address this ambiguity, we introduce normal-order reduction. Normal-order reduction is a deterministic strategy for reducing \(\lambda\)-terms
+reduce the `left-most, outer-most' redex first.
+
+\begin{defin}[Normal-order Reduction]{}
+    A redex is in head position in a \(\lambda\)-term \(M\) if \(M\) takes the form:
+
+    \[
+        \lambda x_{1}, \dots, x_{n} . \underline{(\lambda x. \, M')\ M_1}\ M_2\ \dots \ M_m \qquad \qquad (n \ge 0, m \ge 1)
+    \]
+
+    A \(\lambda\)-term is said to be in head normal form if it contains no redex in head position, in other words takes the form:
+
+    \[
+        \lambda x_{1}, \dots, x_{n} . \, x \ M_1 \ M_2\ \dots \ M_m \qquad \qquad \ \ (mn \ge 0)
+    \]
+
+    Normal order reduction first continually reduces redexes in head position; if that process
+terminates then one has reached a head normal form and one continues applying head
+reduction in the subterms \(M_1, M_2, \dots\) from left to right.
+
+\vspace{20px}
+
+Normal-order reduction of \(M\) \textbf{always} reaches the \(\beta\)-normal form of \(M\) if it possesses one.
+\end{defin}
+
+
+\newpage
+
+\section{Lambda-Definable Functions}
+
+\subsection{Encoding Data in \(\lambda\)-Calculus}
+
+Computation within \(\lambda\)-calculus is given by \(\beta\)-reduction as previously discussed.
+
+\begin{defin}[Church's Numerals]{}
+    \begin{alignat*}{2}
+        \underline{0}\ \  &\triangleq\ \ \lambda f\, x. \, x && \equiv \lambda f\, x. \, f^0 \ x \\
+        \underline{1}\ \  &\triangleq\ \ \lambda f\, x. \,f \ x&& \equiv \lambda f\, x. \, f^1 \ x \\
+        \underline{2}\ \  &\triangleq\ \ \lambda f\, x. \,f \ (f\ x)&& \equiv \lambda f\, x. \, f^2 \ x \\
+        &\cdots& &\cdots\\
+        \underline{n}\ \  &\triangleq\ \ \lambda f\, x. \, \underbrace{f\ ( \cdots (f}_{\displaystyle n}\ x) \cdots ) && \equiv \lambda f\, x. \, f^n \ x 
+    \end{alignat*}
+\end{defin}
+
+
+With this notation we have \(\underline{n} \ M \ N =_\beta M^n \ N\). Note that \(M^n\) alone has no meaning in this context. In particular
+\(M \ M \ M = M^2 \ M \ne M^3\)
+
+\vspace{20px}
+
+\begin{defin}[Church's Booleans]{}
+    Like the numerals, the boolen values for \textbf{true} and \textbf{false} are \(\lambda\)-abstractions that may be applied to a \(\lambda\)-term. 
+    
+    \vspace{5px}
+
+    (Note that \textbf{False} is actually \(\alpha\)-equivalent to \(\underline{0}\))
+
+    \begin{alignat*}{1}
+        \text{\textbf{True}} \ \ &\triangleq \ \ \lambda x\, y. \, x\\
+        \text{\textbf{False}} \ \ &\triangleq \ \ \lambda x\, y. \, y\\
+        \text{\textbf{If}} \ \ &\triangleq \ \ \lambda f\, x\, y. f\ x\ y\\
+        \text{\textbf{Eq}}_0 \ \ &\triangleq \ \ \lambda x.\, x \ (\lambda y. \, \text{\textbf{False}})\ \text{\textbf{True}}
+    \end{alignat*}
+\end{defin}
+
+\begin{defin}[Church's Ordered Pairs]{}
+    \begin{alignat*}{1}
+        \text{\textbf{Pair}} \ \ &\triangleq \ \ \lambda \, x \ y\, f.\, f \ x\ y\\
+        \text{\textbf{Fst}} \ \ &\triangleq \ \ \lambda f. \, f \ \text{\textbf{True}}\\
+        \text{\textbf{Scd}} \ \ &\triangleq \ \ \lambda f. \, f \ \text{\textbf{False}}\\
+    \end{alignat*}
+\end{defin}
+
+\newpage
+
+\subsection{\(\lambda\)-Definable Functions}
+
+\begin{defin}[\(\lambda\)-Definable Functions]{}
+    \(f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) is \(\lambda\)-definable if there is a closed \(\lambda\)-term \(F\) that represents it:
+
+    \vspace{5px}
+
+    For all \((x_{1}, \dots, x_{n}) \in \mathbb{N}^n\) and \(y \in \mathbb{N}\):
+
+    \begin{itemize}
+        \item if \(f(x_{1}, \dots, x_{n}) = y, \ \ \ \) then \(F \ \underline{x_{1}}\ \dots\ \underline{x_{n}} =_\beta \underline{y}\) 
+        \item if \(f(x_{1}, \dots, x_{n}) \uparrow, \ \ \ \ \ \ \,\) then \(F \ \underline{x_{1}}\ \dots\ \underline{x_{n}}\) has no \(\beta\)-normal form
+    \end{itemize}
+\end{defin}
+
+\subsubsection{Representing Basic Functions}
+
+\textbf{Projection} \( \text{proj}_i^n \in \mathbb{N}^n \to \mathbb{N}\):
+\[
+    \lambda x_1 \ \dots x_n. \, x_i
+\]
+
+\vspace{10px}
+
+\textbf{Constant} (with value 0) \( \text{zero}^n \in \mathbb{N}^n \to \mathbb{N}\):
+\[
+    \lambda x_1 \ \dots \ x_n .\, \underline{0}
+\]
+
+\vspace{10px}
+
+\textbf{Successor} succ \( \in \mathbb{N} \to \mathbb{N}\):
+\[
+    \lambda x'\, f\, x . \, f(x'\ f\ x)
+\]
+
+\vspace{20px}
+
+\subsubsection{Representing Composition}
+
+If the total functions \(f \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) with \(g_{1}, \dots, g_{n} \in \mathbb{N}^m \to \mathbb{N}\)
+are represented by \(F\) and \(G_{1}, \dots, G_{n}\), respectively, then their composition \(f \circ (g_{1}, \dots, g_{n}) \in \mathbb{N}^m \to \mathbb{N}\)
+is represented simply by:
+
+\[
+    \lambda x_{1}\, \dots, x_{m}. F\ (G_1\ x_{1}\ \dots\ x_{m}) \dots (G_n\ x_{1}\ \dots\ x_{m})
+\]
+\begin{alignat*}{1}
+    F\ (G_1\ \underline{a_{1}}\ \dots\ \underline{a_{m}}) \dots (G_n\ \underline{a_{1}}\ \dots\ \underline{a_{m}})\ \ &=_\beta \ \ F \ \underline{g_1 (a_{1}, \dots, a_{m})} \dots  \underline{g_n (a_{1}, \dots, a_{m})}\\
+    &=_\beta \ \ \underline{f \big( g_1 (a_{1}, \dots, a_{m}), \dots,  g_n (a_{1}, \dots, a_{m}) \big)}\\
+    &=\ \ \  \underline{f \circ \big[ g_{1}, \dots, g_{n}\big] (a_{1}, \dots, a_{m})}
+\end{alignat*}
+
+This does not necessarily work for partial functions. For instance, the totally defined function \(u \in \mathbb{N}^n \rightharpoonup \mathbb{N}\) is
+represented by \(\boldsymbol{U} \triangleq \lambda x_1 . \Omega\) and \( \text{zero}^1 \in \mathbb{N} \to \mathbb{N}\) is represented by \(\boldsymbol{Z} \triangleq \lambda x_1 . \underline{0}\).
+But \(\text{zero}^1 \circ u\) is not represented by \(\lambda x_1 . \, \boldsymbol{Z} \ (\boldsymbol{U}\ x_1)\), because \(\text{zero}^1 \circ u(n)\) 
+is undefined whereas:
+
+\begin{alignat*}{1}
+    \big(\lambda x_1 . \, \boldsymbol{Z} \ (\boldsymbol{U}\ x_1)\big)\ \underline{n} \ \ &=_\beta\ \ \boldsymbol{Z} \ (\boldsymbol{U}\ \underline{n})\\
+    \ \ &=_{\phantom{\beta}} \ \ \boldsymbol{Z} \ (\lambda x_1 . \Omega \ \underline{n})\\
+    \ \ &=_\beta\ \ \boldsymbol{Z}\ \Omega\\
+    \ \ &=_{\phantom{\beta}}\ \ \lambda\, x.\, \underline{0} \ \, \Omega\\
+    \ \ &=_\beta\ \ \underline{0}
+\end{alignat*}
+
+The composition of partial functions must make sure that each \(G_i\) is fully reduced even it does not contribute to the overall result.
+
+\vspace{5px}
+
+One way to achieve this is:
+\[
+    (G\ a_{1}\ \dots\ a_{n})\ I\ I\ \ =_\beta \ \ \underline{n_G} \ I \ I \ \ =_\beta \ \ I^{n_G} \ I \ \ =_\beta \ \ I
+\]
+Which \(\beta\)-reduces if and only if \((G\ a_{1}\ \dots\ a_{n})\) has \(\beta\)-nf of \(\underline{n_G}\), otherwise no \(\beta\)-nf exists and 
+thus cannot reduce and is then not defined.
+
+\[
+    \big((G_1\ \underline{a_{1}}\ \dots\ \underline{a_{m}})\ I \ I\ \dots(G_n\ \underline{a_{1}}\ \dots\ \underline{a_{m}}) \ I \ I\big)\ \big(F\ (G_1\ \underline{a_{1}}\ \dots\ \underline{a_{m}}) \dots (G_n\ \underline{a_{1}}\ \dots\ \underline{a_{m}})\big)
+\]
+
+\newpage
+
+\subsubsection{Representing Predecessor}
+
+We want a \(\lambda\)-term \textbf{Pred} that satisfies:
+
+\[
+    \text{\textbf{Pred}} \ \underline{n+1} \ =_\beta \ \underline{n} \qquad \land \qquad \text{\textbf{Pred}} \ \underline{0}\ =_\beta\ \underline{0}
+\]
+
+Our strategy is to take a pair \((0, 0)\) together with a mapping \(f \ : \ (a,b) \mapsto (a + 1 , a)\). Repeatedly applying \(f\) to the pair
+yields pairs of the form \((n,n-1)\), where \(n\) in the first field is the number of iterations and the second field naturally contains the 
+predecessor of \(n\). 
+
+\[
+    \text{\textbf{Pred}} \triangleq \lambda n \, f\, x. \, \text{\textbf{Snd}} \big(n \ (G \ f)\ (\text{\textbf{Pair}} \ x \ x)\big)
+\]
+
+\[
+    G \triangleq \lambda f \, p.\, \text{\textbf{Pair}} \big( f\ (\text{\textbf{Fst}}\ p)\big) (\text{\textbf{Fst}}\ p)\ \
+\]
+
+Note that \(n \ (G \ f) \ P\) in the \textbf{Pred} term above, whenever \(n\) reduces to a church numeral \(\underline{n}\), this becomes
+\((G\ f)^n\ P\)
+
+\vspace{10px}
+
+\subsection{Primitive Recursion}
+
+If \(f \in \mathbb{N}^n \to  \mathbb{N}\) is represented by a \(\lambda\)-term \(F\) and \(g \in \mathbb{N}^{n+2} \to \mathbb{N}\) is represented
+by a \(\lambda\)-term \(G\), we want to show \(\lambda\)-definability of the unique \(h \in \mathbb{N}^{n+1} \to  \mathbb{N}\) satisfiying:
+
+\[
+    \begin{cases}
+        \ h(\vec{a}, 0) &\equiv \ \ f(\vec{a})\\
+        \ h(\vec{a}, b+1) \ \ &\equiv \ \ g(\vec{a}, b, h(\vec{a}, b))
+    \end{cases}
+\]
+
+That is, we want to show \(\lambda\)-definability of the unique \(h \in \mathbb{N}^{n+1} \to  \mathbb{N}\) satisfying
+\[
+    h = \Phi_{f,g} (h)
+\]
+
+Where \(\Phi_{f,g} \in \big(\mathbb{N}^{n+1} \to \mathbb{N}\big) \to (\mathbb{N}^{n+1} \to \mathbb{N})\) is given by:
+
+\[
+    \Phi_{f,g}(h)(\vec{a}, b) = \begin{cases}
+        \ f(\vec{a}) & \text{if } b = 0\\
+        \ g(\vec{a}, b-1, h(\vec{a}, b-1)) \quad &\text{otherwise}
+    \end{cases}
+\]
+
+Our strategy is to first show that \(\Phi_{f,g}\) is \(\lambda\)-definable and then to show that we can solve fixed point equations (\(X = M \ X\)) up 
+to \(\beta\)-conversion in the \(\lambda\)-calculus.
+
+\vspace{20px}
+
+\subsubsection{Y Combinator}
+
+To solve these sort of problems we use the concept of fixed points. It turn out that for any \(\lambda\)-term \(M\) there is a \(\lambda\)-term that \(y\) such
+that \(M \ y \ =_\beta \ y\). In other words; for each \(\lambda\)-term there is a \(\lambda\)-term that remains entirely unaffacted by applying
+\(M\). Such a \(y\) is called a fixed point.
+
+\vspace{5px}
+
+So, how do we find the fixed point of any given \(\lambda\)-term \(M\)? We use a \textbf{Y} combinator:
+
+A \(\lambda\)-term that, when applied to a \(\lambda\)-term \(M\) yields a representation of the fixed point. Hence, with \(y = \text{\textbf{Y}}\ M\)
+we get \(M\ (\text{\textbf{Y}}\ M) =_\beta \text{\textbf{Y}} \ M \)
+
+\vspace{5px}
+
+To determine the form of \textbf{Y} we can try to `solve' for \textbf{fact} in the below equation:
+\[
+    \text{\textbf{fact}} = \lambda n.\, \text{\textbf{If}}\ \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot \text{\textbf{fact}}\ (n-1))
+\]
+
+Where multiplication of two values in \(\lambda\)-calculus can be defined below
+\vspace{-5px}
+\[
+    \text{\textbf{mult}} = \lambda m \, n \, f \, x . \, m \ (n \ f)\ x
+\]
+
+To help with `solving' for fact we will define a \textbf{fact}\('\):
+\[
+    \text{\textbf{fact}}' = \lambda f\, n.\,\text{\textbf{If}}\  \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot f\ (n-1))
+\]
+
+We want to find a \textbf{FIX} such that:
+
+\[
+    \text{\textbf{FIX}} \ \text{\textbf{fact}}' \ = \ \text{\textbf{fact}}'\ (\text{\textbf{FIX}} \ \text{\textbf{fact}}')
+\]
+
+So that
+
+\[
+    \text{\textbf{fact}} \triangleq \text{\textbf{FIX}} \ \text{\textbf{fact}}'
+\]
+
+\newpage
+
+This is because:
+
+\begin{alignat*}{1}
+    \text{\textbf{fact}}\ n \ &= \ \text{\textbf{FIX}} \ \text{\textbf{fact}}'\ n\\
+    &=\ \text{\textbf{fact}}'\ (\text{\textbf{FIX}} \ \text{\textbf{fact}}')\\
+    &=\ \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot \underbrace{(\text{\textbf{FIX}} \ \text{\textbf{fact}}')}_{\text{\textbf{fact}}}\ (n-1))
+\end{alignat*}
+
+Next we perform the ``Hat Trick''
+
+\[
+    \hat{\text{\textbf{fact}}}\ =\ \lambda f\, n.\, \text{\textbf{If}}\ \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot f\ f\ (n-1))
+\]
+
+Let \(\text{\textbf{fact}} = \hat{\text{\textbf{fact}}}\ \hat{\text{\textbf{fact}}}\) so that:
+
+\begin{alignat*}{1}
+    \text{\textbf{fact}}\ n \ &= \ \hat{\text{\textbf{fact}}}\ \hat{\text{\textbf{fact}}} \ n\\
+    &=_\beta \text{\textbf{If}}\ \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot \hat{\text{\textbf{fact}}}\ \hat{\text{\textbf{fact}}}\ (n-1))\\
+    &=_\beta \text{\textbf{If}}\ \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot \text{\textbf{fact}}\ (n-1))
+\end{alignat*}
+
+Next we want to find a \(G\) such that \(G\ \text{\textbf{fact}}' = \hat{\text{\textbf{fact}}}\):
+
+\[G = \lambda g\, f.\, g \ (f\ f)\]
+Then
+\begin{alignat*}{1}
+    G\ \text{\textbf{fact}}' &= (\lambda g\, f.\, g \ (f\ f)) \text{\textbf{fact}}'\\
+    &=_\beta \lambda f.\, \text{\textbf{fact}}' \ (f\ f)\\
+    &= \lambda f\, n.\, \text{\textbf{If}}\ \big(\text{\textbf{Eq}}_0\ (n)\big)\ \ (1) \ \ (n \cdot (f\ f)\ (n-1))\\
+    &= \hat{\text{\textbf{fact}}}
+\end{alignat*}
+
+So putting all of this together we get
+
+\begin{alignat*}{1}
+    \text{\textbf{fact}} &= \hat{\text{\textbf{fact}}}\ \hat{\text{\textbf{fact}}}\\
+    &= (G\ \text{\textbf{fact}}')\ (G\ \text{\textbf{fact}}')\\
+    &= (\lambda f. \, (G\ f)\ (G\ f))\ \text{\textbf{fact}}'\\
+    &= \Big(\lambda f. \, \big(\lambda g. \, f\ (g\ g)\big)\ \big(\lambda g. \, f\ (g\ g)\big)\Big)\ \text{\textbf{fact}}'\\
+    &= \boldsymbol{Y}\ \text{\textbf{fact}}'
+\end{alignat*}
+
+This \(\boldsymbol{Y}\) combinator satisfies the following:
+
+\[
+    \boldsymbol{Y}\ M \to \big(\lambda x. \, M \ (x\ x)\big)\ \big(\lambda x. \, M \ (x\ x)\big) \to  M \ \Big(\big(\lambda x. \, M \ (x\ x)\big) \big(\lambda x. \, M \ (x\ x)\big)\Big)
+\]
+
+and so:
+
+\[
+    \boldsymbol{Y}\ M \twoheadrightarrow M \ \Big(\big(\lambda x. \, M \ (x\ x)\big) \big(\lambda x. \, M \ (x\ x)\big)\Big) \twoheadleftarrow M\ (\boldsymbol{Y}\ M)
+\]
+
+Which means for all \(\lambda\)-terms \(M\) we have
+
+\[
+    \boldsymbol{Y}\ M\ =_\beta \ M\ (\boldsymbol{Y}\ M)
+\]
+
+\subsubsection{Representing Primitive Recursion}
+
+If \(f \in \mathbb{N}^n \to \mathbb{N}\) is represented by a \(\lambda\)-term \(F\) and \(g \in \mathbb{N}^{n+2} \to \mathbb{N}\) is represented
+by a \(\lambda\)-term \(G\), we want to show \(\lambda\)-definability of the unique \(h \in \mathbb{N}^{n+1} \to \mathbb{N}\)
+
+\[
+    h(\vec{a}, a) = \Phi_{f,g}(h)(\vec{a}, a) = \begin{cases}
+        \ f(\vec{a}) & \text{if } a = 0\\
+        \ g(\vec{a}, a-1, h(\vec{a}, a-1)) \quad &\text{otherwise}
+    \end{cases}
+\]
+
+\newpage
+
+Using the \(\boldsymbol{Y}\) combinator we can show that \(h\) can be represented as:
+
+\[
+    \boldsymbol{Y}\ \Big(\lambda z\, \vec{x}\, x. \ \text{\textbf{If}}\ (\text{\textbf{Eq}}_0\ x) \ (F\ \vec{x}) \ \big(G\ \vec{x} \ (\text{\textbf{Pred}}\ x) \ (z\ \vec{x}\ (\text{\textbf{Pred}}\ x))\big) \Big)
+\]
+
+\vspace{20px}
+
+\subsubsection{Representing Minimisation}
+
+We can express \(\mu^n f\) in terms of a fixed point equation:
+\[
+    \mu^n f (\vec{x}) \equiv g(\vec{x}, 0)
+\]
+
+Where \(g\) satisfies \(g = \Psi_f (g)\) with \(\Psi_f \in (\mathbb{N}^{n+1} \rightharpoonup \mathbb{N}) \to (\mathbb{N}^{n+1} \rightharpoonup \mathbb{N})\) defined by
+
+\[
+    \Psi_f(g)(\vec{x}, x) \equiv \begin{cases}
+        \ x & \text{if } f(\vec{x}, x) = 0\\
+        \ g(\vec{x}, x + 1) \quad & \text{otherwise}
+    \end{cases}
+\]
+
+Suppose \(f \in \mathbb{N}^{n+1} \to \mathbb{N}\) satisfies \(\forall \vec{a}\ \exists a. \ \big(f(\vec{a}, a) = 0\big)\), so that \(\mu^n f \in \mathbb{N}^n \to \mathbb{N}\)
+
+\vspace{5px}
+
+Thus for all \(\vec{a} \in \mathbb{N}^n, \mu^n f(\vec{a}) = g(\vec{a}, 0)\) with \(g = \Psi_f(g)\) and \(\Psi_f(g)(\vec{a}, a)\) is given by
+
+\[
+    \Psi_f(g)(\vec{a}, a) \equiv \begin{cases}
+        \ a & \text{if } f(\vec{a}, a) = 0\\
+        \ g(\vec{a}, a + 1) \quad & \text{otherwise}
+    \end{cases}
+\]
+
+So if \(f\) is represented by a \(\lambda\)-term \(F\), then \(\mu^n f\) is represented by:
+
+\[
+    \lambda \vec{x}.\, \boldsymbol{Y} \Big(\lambda z\, \vec{x}\, x.\, \text{\textbf{If}}\ (\text{\textbf{Eq}}_0 \ (F\ \vec{x}\ x))\ x\ (z\ \vec{x}\ (\text{\textbf{Succ}}\ x))\Big)\ \vec{x}\ \underline{0}
+\]
+
+\subsection{\(\lambda\)-Definability}
+
+Every partial recursive function is \(\lambda\)-definable, with matching \(\uparrow\) with that there exists no \(\beta\)-nf makes the representations
+more complicated.
+
+\begin{theo}[Computability]{}
+    A partial function is computable if and only if it is \(\lambda\)-definable.
+\end{theo}
+
+We have already show that computable means partial recursive and hence is \(\lambda\)-definable. So it remains to see that \(\lambda\)-definablle functions
+are register machine computable. To show this we could:
+
+\begin{itemize}
+    \item Code \(\lambda\)-terms as numbers (Ensuring that operations for constructing and deconstructing terms are given by register machine computable functions on codes)
+    \item Write a register machine interpreter for (normal order) \(\beta\)-reduction
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,9 @@
+ - In the solution notes for the first supervision, what is the idea of the proof for inversion for ->, is it we assume that the lhs of the implication
+ is true and then that means that there is a transition so we look at the rules that could provide a transition and then we split the rules up into
+ cases? If that is the main idea why does the proof have "or..." and "then either ... or blah or ...", wouldn't splitting into cases have the or "built-in",
+ as in the transition must be one of the following cases.
+
+ - In the notes the proof of determinacy has the cases for "e_1 op e_2", how do we justify that the op symbol has to be the same for (op+) or (op>=)
+ cases? I can intuitively see why we can't have first case being "e_1 + e_2" and the second being "e_1 >= e_2" but how is this formally shown. 
+ (The notes just say by examining the expressions in the left-hand-sides of the conclusions of the rules, and the irreducibility of values
+ lemma, the only possibilities are these)
